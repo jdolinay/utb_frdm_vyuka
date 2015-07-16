@@ -32,8 +32,8 @@
 #include "MKL25Z4.h"
 
 // Cislo pinu, ktery budeme pouzivat, napr. 18 pro cervenou LED primo na FRDM desce.
-// Pozor: zmena je mozna pouze v ramci portu B, kod nice neni univerzalni,
-// nebudwe fungovat pro piny na jinem portu
+// Pozor: zmena je mozna pouze v ramci portu B, kod neni univerzalni,
+// nebude fungovat pro piny na jinem portu
 #define		LED_PIN		(18)
 
 volatile uint32_t g_delaycnt;

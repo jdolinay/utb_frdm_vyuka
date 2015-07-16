@@ -42,8 +42,8 @@
 #include "MKL25Z4.h"
 
 // Cislo pinu, ktery budeme pouzivat, napr. 18 pro cervenou LED primo na FRDM desce.
-// Pozor: zmena je mozna pouze v ramci portu B, kod nice neni univerzalni,
-// nebudwe fungovat pro piny na jinem portu
+// Pozor: zmena je mozna pouze v ramci portu B, kod neni univerzalni,
+// nebude fungovat pro piny na jinem portu
 #define		LED_PIN		(19)
 
 
@@ -53,10 +53,6 @@ void delay(void);
 
 int main(void)
 {
-	// Nastaveni preruseni od casovace SysTick na 1 ms periodu
-	// vyuzito v delay_ms
-	//SysTick_Config(SystemCoreClock / 1000u );
-
 	// 1. Povolime hodinovy signal pro port A a B
 	SIM->SCGC5 |= (SIM_SCGC5_PORTA_MASK | SIM_SCGC5_PORTB_MASK );
 
