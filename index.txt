@@ -1,0 +1,10 @@
+16.7.2015
+
+Programy pro vyuku Programovani mikropocitacu.
+
+Usporadani:
+programs - obsahuje jen zdrojove kody ve slozkach podle nazvu programu (ukazky)
+projects - obshauje kompletni projekty IDE (KDS 3.0.0)
+
+Tyto projekty ale obsahuji pouze link na zdrojovy kod v /programs.
+Toto je pro usnadneni prohlizeni zdrojovych kodu a jejich exportu pro dokumentaci.
