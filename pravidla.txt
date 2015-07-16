@@ -1,0 +1,16 @@
+16.7.2015
+
+Usporadani:
+Cilem je usnadneni prohlizeni zdrojovych kodu a jejich exportu pro dokumentaci, pripadne i snazsi podpora vice IDE.
+
+- /programs - obsahuje jen zdrojove kody ve slozkach podle nazvu programu (ukazky).
+- /projects - obsahuje kompletni projekty IDE (KDS 3.0.0). 
+		Tyto projekty ale obsahuji pouze link na zdrojovy kod v /programs.
+		Nazev hlavniho zdrojoveho kodu (main) v programs je stejny jako nazev projektu!
+
+Priklad:
+Projekt blink_busy - ukazka blikani LED s vyuzitim jednoduche cekaci smycky while(n--);
+Zdrojovy kod: 	programs/blink_busy/blink_busy.c
+Projekt: 	projects/blink_busy
+
+
