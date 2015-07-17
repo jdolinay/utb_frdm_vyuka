@@ -9,7 +9,8 @@ Cilem je usnadneni prohlizeni zdrojovych kodu a jejich exportu pro dokumentaci, 
 		Tyto projekty ale obsahuji pouze link na zdrojovy kod v /programs.
 		Nazev hlavniho zdrojoveho kodu (main) v programs je stejny jako nazev projektu!
 		Pokud projekt pouziva ovladace, pak jsou take pouzity jako odkazy na soubory v 
-		/drivers/[nazev driveru].
+		/drivers/[nazev driveru]. V Includes cestach pro kompilator musi byt cesta k prislusnemu
+		ovladaci, napr. "../../../drivers/gpio"
 
 Priklad:
 Projekt blink_busy - ukazka blikani LED s vyuzitim jednoduche cekaci smycky while(n--);

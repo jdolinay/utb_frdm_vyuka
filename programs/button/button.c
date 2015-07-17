@@ -81,8 +81,10 @@ int main(void)
 	// 4. Zapneme interni pull-up rezistory pro tlacitka
 	// Poznamka: pro nas kit neni potreba, jsou osazeny externi, ale
 	// pro ukazku zapiname.
-	PORTA->PCR[ON_PIN] |= (1 << ON_PIN);
-	PORTA->PCR[OFF_PIN] |= (1 << OFF_PIN);
+	// PORT_PCR_PS_MASK - maska pro vyber pull-up a ne pull-down
+	// PORT_PCR_PE_MASK - maska pro povoleni pull rezistoru
+	PORTA->PCR[ON_PIN] |= (PORT_PCR_PS_MASK | PORT_PCR_PE_MASK);
+	PORTA->PCR[OFF_PIN] |= (PORT_PCR_PS_MASK | PORT_PCR_PE_MASK);
 
 	// Zhasneme LED zapisem log. 1 na pin
 	PTB->PSOR |= (1 << LED_PIN);
