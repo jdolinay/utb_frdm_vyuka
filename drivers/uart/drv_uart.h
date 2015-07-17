@@ -109,6 +109,49 @@ uint8_t uart0_read(void);
   */
 uint8_t uart0_data_available(void);
 
+/**
+ * @brief Send one character to SCI. If the char is "\n", send CR + LF
+ * @param[in] c char to send
+ */
+void uart0_putch(char c);
+
+/**
+ * @brief Send null-terminated string to SCI.
+ * @param[in] str pointer to string to send
+ * @note If the string contains "\n", CR + LF are sent.
+ */
+void uart0_puts(const char* str);
+
+/**
+ * @brief Read one character from SCI.
+ * @return the character read.
+ * @note This function will block the caller, if there is no character available
+ * and wait for character to arrive.
+ */
+char uart0_getch(void);
+
+/**
+ * @brief Read string from SCI. It will block the caller untill reading is finished.
+ * @param str [out] buffer provided by the user to receive the string
+ * @param max_chars [in] maximum characters (not including terminating 0) to
+ *  receive.
+ * @param terminator [in] character which means the end of the string. Can be 0 if not needed.
+ * @return number of characters actually written to the string str; not including
+ * the ending 0.
+ * @note The possible results are:
+ * 1) string with max_chars valid characters .
+ * 2) string up to terminator character
+ * 3) string with all the chars from buffer (which may be empty string if buffer is empty)
+ *
+ * The resulting string is null-terminated (valid C-language string) in all cases.
+ * The terminator character in not included in the resulting string.
+ */
+uint32_t uart0_gets(char* str, uint32_t max_chars, char terminator);
+
+
+
+
+
 /*@} end of UTB_FRDM_UARTDriver */
 
 

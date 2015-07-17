@@ -28,12 +28,12 @@
 		<link>
 			<name>Sources/drv_uart.c</name>
 			<type>1</type>
-			<locationURI>PARENT-2-PROJECT_LOC/programs/uart/drv_uart.c</locationURI>
+			<locationURI>PARENT-2-PROJECT_LOC/drivers/uart/drv_uart.c</locationURI>
 		</link>
 		<link>
 			<name>Sources/drv_uart.h</name>
 			<type>1</type>
-			<locationURI>PARENT-2-PROJECT_LOC/programs/uart/drv_uart.h</locationURI>
+			<locationURI>PARENT-2-PROJECT_LOC/drivers/uart/drv_uart.h</locationURI>
 		</link>
 		<link>
 			<name>Sources/uart.c</name>

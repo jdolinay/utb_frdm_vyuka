@@ -17,6 +17,9 @@
 /* Internal functions */
 static void uart0_setbaudrate(UART0_baudrate baudrate);
 
+const char UTB_UART_CR = (const char)0x0D;
+const char UTB_UART_LF = (const char)0x0A;
+
 /*
  * Initialize UART0
  */
@@ -83,6 +86,65 @@ void uart0_initialize(UART0_baudrate baudrate)
 	 return ((UART0->S1 & UART0_S1_RDRF_MASK) != 0);
  }
 
+ /* read one character. return 0 if no character is available */
+ char uart0_getch(void)
+ {
+ 	return (char)uart0_read();
+ }
+
+ /* send one character to console */
+ void uart0_putch(char c)
+ {
+     if(c == '\n')
+     {
+     	uart0_write(UTB_UART_CR);
+     	uart0_write(UTB_UART_LF);
+     }
+     else
+     {
+    	 uart0_write(c);
+     }
+ }
+
+ /* send null-terminated string */
+ void uart0_puts(const char* str)
+ {
+ 	while(*str)
+    {
+     	if( *str == '\n')
+     	{
+     		uart0_write(UTB_UART_CR);
+     		uart0_write(UTB_UART_LF);
+     	}
+     	else
+     	{
+     		uart0_write(*str);
+     	}
+
+     	str++;
+     }
+ }
+
+ /* read string from console. */
+ uint32_t uart0_gets(char* str, uint32_t max_chars, char terminator)
+ {
+     char c;
+     uint8_t i;
+
+     for ( i = 0; i < max_chars; i++ )
+     {
+     	c = uart0_getch();
+     	if ( c != terminator )
+             str[i] = c;
+     	else
+     		break;
+     }
+     str[i] = 0;
+     return i;
+ }
+
+
+
  /*internal function */
 static void uart0_setbaudrate(UART0_baudrate baudrate)
 {
@@ -106,11 +168,6 @@ static void uart0_setbaudrate(UART0_baudrate baudrate)
 	reg_temp |= UART0_C4_OSR(osr_val - 1);
 	// Write reg_temp to C4 register
 	UART0->C4 = reg_temp;
-
-	/* just set C4 to defaults and write our OSR value */
-	/*	uart->reg->C4 = 0;
-	 uart->reg->C4 |= UART0_C4_OSR(osr_val-1);
-	 This does not work; maybe cannot write 0s to OSR field? */
 
 	/* Save current value of uartx_BDH except for the SBR field */
 	reg_temp = UART0->BDH & ~(UART0_BDH_SBR(0x1F));
