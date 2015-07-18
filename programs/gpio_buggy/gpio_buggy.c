@@ -26,16 +26,17 @@ int main(void)
 	gpio_initialize();
 
 	// Nastavit pin jako vystup
-	pinMode(LD1, OUTPUT);
+	pinMode(LD2, OUTPUT);
 
 	// Zapsat na pin log. 1, tim LED zhasne.
-	pinWrite(LD1, HIGH);
+	pinWrite(LD2, HIGH);
 
+	// Blikani LED
 	while(1)
 	{
-		pinWrite(LD1, LOW);	// ...rozsvitime LED zapisem log. 0
+		pinWrite(LD2, LOW);	// ...rozsvitime LED zapisem log. 0
 		delay();
-		pinWrite(LD1, HIGH);	// ...zhasneme LED zapisem log. 1
+		pinWrite(LD2, HIGH);	// ...zhasneme LED zapisem log. 1
 		delay;	// TODO: co se stane pri volani funkce bez zavorek?
 	}
 
@@ -65,13 +66,13 @@ int main(void)
 	pinMode(LD1, OUTPUT);
 
 	// Zapsat na pin log. 1, tim LED zhasne.
-	pinWrite(LD1, HIGH);
+	pinWrite(LD2, HIGH);
 
 	for(;;)
 	{
-		pinWrite(LD1, LOW);		// ...rozsvitime LED zapisem log. 0
+		pinWrite(LD2, LOW);		// ...rozsvitime LED zapisem log. 0
 		delay();
-		pinWrite(LD1, HIGH);	// ...zhasneme LED zapisem log. 1
+		pinWrite(LD2, HIGH);	// ...zhasneme LED zapisem log. 1
 	}
 
     /* Never leave main */
