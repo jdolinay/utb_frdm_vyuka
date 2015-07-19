@@ -4,7 +4,12 @@
  * jako pinWrite a pinRead.
  * Tyto funkce jsou obsazeny v ovladaci drv_gpio.
  *
- * Program obsahuje chyby!
+ * Program obsahuje chyby! Opravte je, tak aby fungoval podle zadání.
+ *
+ * Program má blikat LED na kitu tak, aby doba svitu byla stejná jako
+ * doba kdy LED nesviti a LED blikala rychlosti asi 1x za sekundu.
+ *
+ * Podle vlastní odvahy si zvolte obtiznost reseni chyb pomoci #define OBTIZNOST nize.
  *
  */
 
