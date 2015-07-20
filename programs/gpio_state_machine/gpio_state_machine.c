@@ -24,8 +24,11 @@ int main(void)
 
 	gpio_initialize();
 
-	// Nastavit pin jako vystup
+	// Nastavit pin pro LED jako vystup
 	pinMode(LD3, OUTPUT);
+	// Piny pro tlacitka jako vstup
+	pinMode(SW1, INPUT);
+	pinMode(SW2, INPUT);
 
 	// Zapsat na pin log. 1, tim LED zhasne.
 	pinWrite(LD3, HIGH);
@@ -53,8 +56,9 @@ int main(void)
 		}
 
 		// TODO: kod pro stav BLIKA je sice takto srozumitelny, ale dlouho trva
-		// nez se znovu otestuje tlacitko. Dokazete ho upravit aby se tlacitko testovalo
-		// casteji?
+		// nez se znovu otestuje tlacitko. Zkuste kratce stisknout SW2; nekdy se
+		// blikani nezastavi...
+		// Dokazete program upravit tak, aby se tlacitko testovalo casteji?
 	}
 
 
@@ -80,7 +84,7 @@ void led_update_state(void)
  * */
 void delay(void)
 {
-	unsigned long n = 50000L;
+	unsigned long n = 700000L;
 	while ( n-- )
 		;
 }

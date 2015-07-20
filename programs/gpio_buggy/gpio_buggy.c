@@ -21,6 +21,10 @@
 // 1 = nightmare (nocni mura :) )
 #define	OBTIZNOST  	0
 
+
+//////////////////////////////////////////////////////////////////////////
+
+/* Obtiznost 0 = nizka */
 #if OBTIZNOST == 0
 // Prototyp funkce delay() definovane nize
 void delay(void);
@@ -45,7 +49,6 @@ int main(void)
 		pinWrite(LD2, LOW);	// ...rozsvitime LED zapisem log. 0
 		delay();
 		pinWrite(LD2, HIGH);	// ...zhasneme LED zapisem log. 1
-		delay;	// TODO: co se stane pri volani funkce bez zavorek?
 	}
 
 
@@ -59,10 +62,11 @@ int main(void)
 void delay(void)
 {
 	uint32_t cnt;
-	for ( cnt = 0; cn<30000; cnt++ )
+	for ( cnt = 0; cn<500000L; cnt++ )
 		;
 }
 
+/* Obtiznost 1 = vysoka */
 #elif OBTIZNOST == 1
 // Prototyp funkce delay() definovane nize
 void delay(void);
@@ -84,6 +88,7 @@ int main(void)
 		pinWrite(LD2, LOW);		// ...rozsvitime LED zapisem log. 0
 		delay();
 		pinWrite(LD2, HIGH);	// ...zhasneme LED zapisem log. 1
+		delay;
 	}
 
     /* Never leave main */
@@ -92,7 +97,7 @@ int main(void)
 void delay(void)
 {
 	uint8_t cnt;
-	for ( cnt = 0; cn<30000; cnt++ )
+	for ( cnt = 0; cn<50000; cnt++ )
 		;
 }
 #else
