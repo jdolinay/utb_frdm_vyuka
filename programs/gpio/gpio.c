@@ -38,8 +38,11 @@ int main(void)
 
 	gpio_initialize();
 
-	// Nastavit pin jako vystup
+	// Nastavit pin pro LED jako vystup
 	pinMode(LD1, OUTPUT);
+	// Piny pro tlacitka jako vstup
+	pinMode(SW1, INPUT);
+	pinMode(SW2, INPUT);
 
 	// Zapsat na pin log. 1, tim LED zhasne.
 	pinWrite(LD1, HIGH);
@@ -69,7 +72,7 @@ int main(void)
  * */
 void delay(void)
 {
-	unsigned long n = 30000L;
+	unsigned long n = 200000L;
 	while ( n-- )
 		;
 }

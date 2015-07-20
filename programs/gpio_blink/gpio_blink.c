@@ -53,7 +53,7 @@ int main(void)
  * */
 void delay(void)
 {
-	unsigned long n = 50000L;
+	unsigned long n = 400000L;
 	while ( n-- )
 		;
 }

@@ -32,6 +32,9 @@ int main(void)
 
 	// Nastavit pin jako vystup
 	pinMode(LD2, OUTPUT);
+	// Piny pro tlacitka jako vstup
+	pinMode(SW1, INPUT);
+	pinMode(SW2, INPUT);
 
 	// Zapsat na pin log. 1, tim LED zhasne.
 	pinWrite(LD2, HIGH);
@@ -69,6 +72,9 @@ int main(void)
 
 	// Nastavit pin jako vystup
 	pinMode(LD1, OUTPUT);
+	// Piny pro tlacitka jako vstup
+	pinMode(SW1, INPUT);
+	pinMode(SW1, INPUT);
 
 	// Zapsat na pin log. 1, tim LED zhasne.
 	pinWrite(LD2, HIGH);
