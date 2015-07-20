@@ -1,20 +1,21 @@
 /*
  * Ukazkovy program pro Programovani mikropocitacu
  * Seriova komunikace (UART).
+ * Program ukazuje prijem a vysilani znaku pres modul UART0.
+ * Vysila na seriovou linku text "Ahoj". Poslanim znaku "s" lze tento
+ * vypis zastavit a znovu spustit.
+ * Komunikacni rychlost 9600 bd.
  *
  * POZOR: v nastaveni projektu > compiler > preprocesor musi byt CLOCK_SETUP=1
  * aby byl CPU clock 48 MHz!
- *
- *
  *
   Uzitecne informace
   1. KL25Z obsahuje 3 UART moduly: UART0, UART1 a UART2. Modul UART0 je pripojen
    	   take na piny pro USB komunikace, lze s nim tedy komunikovat pres virtualni
    	   seriovy port pres USB kabel zapojeny do SDA konektoru na desce FRDM.
+   	   Je dostupny na pocitaci jako "Open SDA - CDC Serial Port".
 
   2. Soubor MKL25Z4.h definuje strukturu pro pristup k registrum UART (dle CMSIS)
-
-
  *
  */
 
@@ -27,15 +28,38 @@ volatile uint32_t g_delaycnt;
 
 int main(void)
 {
+	uint8_t vypis = 1;
+	char c;
+
 	// Nastaveni preruseni od casovace SysTick na 1 ms periodu
 	// vyuzito v delay_ms
 	SysTick_Config(SystemCoreClock / 1000u );
 
-	uart0_initialize(BD9600);
+	uart0_initialize(BD115200);	//BD9600);
 
 	while ( 1 )
 	{
-		uart0_write('a');
+		// Pokud je "vypis" povolen, vypisujeme text
+		if (vypis )
+			uart0_puts("ahoj\n");
+
+		// poslanim znaku s jde vypis zastavit a znovu spustit
+		// Testujeme, zda je ve vyrovnavaci pameti UART modulu prijaty znak...
+		if ( uart0_data_available() )
+		{
+			// a pokud ano, precteme jej
+			c = uart0_getch();
+			// odesleme znak zpet = echo
+			uart0_putch(c);
+
+			// vyhodnotime precteny znak
+			if ( c == 's' )
+			{
+				vypis = !vypis;	// negujeme hodnotu "vypis"
+				uart0_puts("\nPrikaz prijat.\n");// vypiseme potvrzeni prikazu
+			}
+		}
+
 		delay_ms(1000);
 	}
 
