@@ -45,6 +45,11 @@ extern "C" {
   @{
  */
 
+/* Kontrola platneho nastaveni CPU clock */
+#if DEFAULT_SYSTEM_CLOCK != 48000000
+ #error UART0 driver only supports 48 MHz clock setup. Please add CLOCK_SETUP=1 to Compiler > Preprocesor symbols.
+#endif
+
 /* macro which creates 32-bit value by combining OSR and BR values.
  * osr is the real OSR value; the register C4 stores osr-1 (value %11 (3) in OSR means real osr = 4) */
 #define		UART_MAKE_BDVAL(osr, br, uart1_br )	((br & 0x00001FFF) | ((osr & 0x1F) << 13) \
