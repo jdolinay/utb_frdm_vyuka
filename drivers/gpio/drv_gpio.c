@@ -23,6 +23,11 @@ void gpio_initialize(void)
 {
 	// Enable clock for ports A and B
 	SIM->SCGC5 |= (SIM_SCGC5_PORTA_MASK | SIM_SCGC5_PORTB_MASK );
+
+	// Configure SW1 to GPIO mode; it is by default NMI (non-maskable interrupt)
+	// and if we do not provide handler for NMI and do not configure the button,
+	// then the program will end in Default ISR when SW1 is pressed.
+	PORTA->PCR[4] = PORT_PCR_MUX(1); /* set pin A4 to GPIO mode */
 }
 
 /* Configure given pin to behave as input or output. */
