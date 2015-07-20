@@ -27,19 +27,23 @@
 	 A instance teto struktury pro jednotlive porty, napr.:
 	 #define PTA     ((GPIO_Type *)PTA_BASE)
 
-  4. Funkce main obsahuje 2 verze kodu. Pomoci komentaru muzete zvolit, ktera se pouzije.
+  4. Funkce main obsahuje 2 verze kodu. Pomoci #define VERZE_KODU nize muzete zvolit,
+  	  ktera verze se pouzije.
 
  *
- * tip: clock pro modrou led nezapnut; tak zjisti ze pada po uprave na modrou LED.
- *  + sami mohou najit definice pres prave tl + Open Declaration
- * tip: ukol bude upravit poskytnute funkce na jiny port a pin
- * tip: podle miry porozumneni jde udelat efektivnejsi kod, kdyz beru jako
+
+  tip: podle miry porozumneni jde udelat efektivnejsi kod, kdyz beru jako
  * samostatne objekty, vymyslim max. kod if (0 ) pouzij port A, else if (1) pouzij portB.
  * ale kdyz vim ze jsou to adresy v pameti, muzu udelat makro, ktere podle daneho cisla portu
  * vypocte "base" adresu pro jeho objekt.
  */
 
 #include "MKL25Z4.h"
+
+/* pomoci tohto define volime verzi kodu:
+ * 0 = "objektovy" pristup k registrum portu.
+ * 1 = pristup neobjektovy.  */
+#define	VERZE_KODU		0
 
 // Cislo pinu, ktery budeme pouzivat, napr. 18 pro cervenou LED primo na FRDM desce.
 // Pozor: zmena je mozna pouze v ramci portu B, kod neni univerzalni,
@@ -60,7 +64,7 @@ int main(void)
 	// Dalsi kod je ve 2 verzich: A nebo B.
 
 	///////////// Verze A: "objektovy pristup"
-
+#if VERZE_KODU == 0
 	// 2. Nastavime funkci pinu na GPIO
 	// PORT_PCR_MUX je makro definovane v MKL25Z4.h, vstupem je
 	// cislo funkce pinu (zjistime v datasheetu)
@@ -84,6 +88,7 @@ int main(void)
 
 
 	///////////// Verze B: "neobjektovy pristup"
+#elif VERZE_KODU == 1
 	// Toto je alternativni pristup k registrum pomoci maker, ktera jako parametr
 	// maji prislusny port. Odpovida to zapisu:
 	// 	vrat_registr_smeru_portu(port) = mask;
@@ -91,7 +96,7 @@ int main(void)
 	// port->registr_smeru_portu = maska;
 	// Makra jsou definovana take v MKL25Z4.h
 
-	/*
+
 	// 2. Nastavime funkci pinu na GPIO
 	PORT_PCR_REG(PORTB, LED_PIN) = PORT_PCR_MUX(1);
 
@@ -106,7 +111,9 @@ int main(void)
 		GPIO_PCOR_REG(PTB) |= (1 << LED_PIN);
 		delay();
 	}
-	*/
+#else
+	#error Neplatna hodnota VERZE_KODU!
+#endif
 
     /* Never leave main */
     return 0;

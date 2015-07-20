@@ -18,9 +18,9 @@
  * B19 	- Green LED
  * D1	- Blue LED (Arduino pin D13)
  * (LED na UTB kitu)
- * B8 - LED_RED
- * B9 - LED_YELLOW
- * B10 - LED_GREEN
+ * B8 - LD1 cervena
+ * B9 - LD2 zluta
+ * B10 - LD3 zelena
  * Vsechny LED sviti, pokud je pin 0 (LOW).
  *
  * Tip: pozdeji se naucime ovladat piny primo pomoci registru.
