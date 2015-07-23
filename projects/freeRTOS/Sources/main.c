@@ -1,5 +1,7 @@
 /*
  * main implementation: use this 'C' sample to create your own application
+ * Toto je original ukazkovy program od: Erich Styger
+ https://github.com/ErichStyger/mcuoneclipse/tree/master/Examples/FreeRTOS_Ports/CodeWarrior/CW_FreeRTOS_FRDM-KL25Z
  *
  */
 //#include "derivative.h" /* include peripheral declarations */

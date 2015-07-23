@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>freeRTOS</name>
+	<name>rtos_blink</name>
 	<comment></comment>
 	<projects>
 	</projects>
@@ -29,6 +29,11 @@
 			<name>FreeRTOS</name>
 			<type>2</type>
 			<locationURI>PARENT-2-PROJECT_LOC/FreeRTOS</locationURI>
+		</link>
+		<link>
+			<name>Sources/rtos_blink.c</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/programs/rtos_blink/rtos_blink.c</locationURI>
 		</link>
 	</linkedResources>
 </projectDescription>

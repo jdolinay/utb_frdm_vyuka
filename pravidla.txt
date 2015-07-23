@@ -3,7 +3,9 @@
 Usporadani:
 Cilem je usnadneni prohlizeni zdrojovych kodu a jejich exportu pro dokumentaci, pripadne i snazsi podpora vice IDE.
 
+- /doc	    - dokumentace.	
 - /drivers  - ovladaèe periferii, napr. UART, displej.... Kazdy ve vlastni slozce!
+- /FreeRTOS - zdrojovy kod FreeRTOS portu pro KL25Z	
 - /programs - obsahuje jen zdrojove kody ve slozkach podle nazvu programu (ukazky).
 - /projects - obsahuje kompletni projekty IDE (KDS 3.0.0). 
 		Tyto projekty ale obsahuji pouze link na zdrojovy kod v /programs.
@@ -25,4 +27,14 @@ Vybrat umisteni utb_frdm_vyuka/projects
 Vybrat projekt(y), ktere se maji importovat
 Nesmi byt zaskrtnuto "copy projects into workspace"!
 Provest import. Projekty pujdou prelozit.
+
+
+Vytvoreni noveho projektu v KDS 3.0.0
+- New > Kinetis Project  
+(Pro ukazkove projekty: Location zrusit "default" a vybrat utb_frdm_vyuka/projects)
+- Vybrat CPU > MKL25Z...128...
+- U Kinetis SDK vybrat "none" - nepouzijeme. U Processor Expert taky nezapinat (nepouzijeme).
+- Do projektu vlozit potrebne ovladace z utb_frdm_vyuka/drivers tak, ze je pretahneme z Pruzkumnika
+do KDS na slozku Sources. Z nabizenych moznosti zvolit "Link" (tj. odkazy na soubory, ne zkopirovani).
+Alternativne: New Folder > typ slozky vybrat "linked folder".
 

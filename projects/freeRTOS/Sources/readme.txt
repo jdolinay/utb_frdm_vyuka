@@ -1,4 +1,9 @@
-Original from mcuoneclipse:
+
+Informace k pouziti FreeRTOS najdete v /doc/FreeRTOS.txt
+Toto je original ukazkovy program od: Erich Styger 
+https://github.com/ErichStyger/mcuoneclipse/tree/master/Examples/FreeRTOS_Ports/CodeWarrior/CW_FreeRTOS_FRDM-KL25Z
+
+Original readme from mcuoneclipse:
 
 readme.txt
 ==========

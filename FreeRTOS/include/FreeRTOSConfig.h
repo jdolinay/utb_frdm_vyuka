@@ -94,8 +94,8 @@
 #define configTICK_RATE_HZ                        ((TickType_t)100) /* frequency of tick interrupt */
 #define configSYSTICK_USE_LOW_POWER_TIMER         0 /* If using Kinetis Low Power Timer (LPTMR) instead of SysTick timer */
 #define configSYSTICK_LOW_POWER_TIMER_CLOCK_HZ    1 /* dummy value */
-#define configCPU_CLOCK_HZ                        20971530U
-#define configBUS_CLOCK_HZ                        20971530U
+#define configCPU_CLOCK_HZ                        48000000U
+#define configBUS_CLOCK_HZ                        24000000U
 #define configSYSTICK_USE_CORE_CLOCK              1 /* System Tick is using core clock  */
 #define configSYSTICK_CLOCK_DIVIDER               1 /* no divider */
 #define configSYSTICK_CLOCK_HZ                    ((configCPU_CLOCK_HZ)/configSYSTICK_CLOCK_DIVIDER) /* frequency of system tick counter */

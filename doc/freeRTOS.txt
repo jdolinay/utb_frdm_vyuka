@@ -8,9 +8,9 @@ To make it work in KDS 3.0.0:
 - Create new project for KL25Z MCU.
 - Copy the FreeRTOS folder to Sources in the project.
 - Add include paths for C compiler to:
--- FreeRTOS/include
--- FreeRTOS/port
--- FreeRTOS/src
+-- FreeRTOS/include ("${workspace_loc:/${ProjName}/Sources/FreeRTOS/include}")
+-- FreeRTOS/port ("${workspace_loc:/${ProjName}/Sources/FreeRTOS/port}")
+-- FreeRTOS/src ("${workspace_loc:/${ProjName}/Sources/FreeRTOS/src}")
 (Use Workspace button to select the path)
 - Open startup_MKL25Z4.s and replace names of interrupt handlers:
     .long   /*SVC_Handler*/ vPortSVCHandler		    /* SVCall Handler*/
