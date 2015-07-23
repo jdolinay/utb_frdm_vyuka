@@ -22,12 +22,13 @@ int main(void)
 	// 2. Smazeme displej. Kurzor bude na radku 1, sloupci 1.
 	lcd_clear();
 
+
 	// Vypis jednoho znaku
 	lcd_putch('U');
-	// posun kurzoru zhruba na stred prvniho radku
-	lcd_set_cursor(1,8);
+	// posun kurzoru na stred prvniho radku
+	lcd_set_cursor(1,10);
 	lcd_putch('T');
-	lcd_set_cursor(1,15);
+	lcd_set_cursor(1,20);
 	lcd_putch('B');
 
 	// Na dalsi radky vypiseme texty
@@ -42,12 +43,8 @@ int main(void)
 
 
 	while(1)
-	{
-		lcd_backlight_on();
-		delay();
-		lcd_backlight_off();
-		delay();
-	}
+		;
+
     /* Never leave main */
     return 0;
 }

@@ -1,0 +1,28 @@
+23.7.2015
+Oficial FreeRTOS port for KL25Z is not available.
+
+Port from Erich Styger obtained from:
+https://github.com/ErichStyger/mcuoneclipse/tree/master/Examples/FreeRTOS_Ports/CodeWarrior/CW_FreeRTOS_FRDM-KL25Z
+
+To make it work in KDS 3.0.0:
+- Create new project for KL25Z MCU.
+- Copy the FreeRTOS folder to Sources in the project.
+- Add include paths for C compiler to:
+-- FreeRTOS/include
+-- FreeRTOS/port
+-- FreeRTOS/src
+(Use Workspace button to select the path)
+- Open startup_MKL25Z4.s and replace names of interrupt handlers:
+    .long   /*SVC_Handler*/ vPortSVCHandler		    /* SVCall Handler*/
+    .long   0                                               /* Reserved*/
+    .long   0                                               /* Reserved*/
+    .long   /*PendSV_Handler*/ vPortPendSVHandler           /* PendSV Handler*/
+    .long   /*SysTick_Handler*/ vPortTickHandler            /* SysTick Handler*/
+
+- Specify CPU clock and BUS clock in FreeRTOSConfig.h:
+   #define configCPU_CLOCK_HZ                        20971530U
+   #define configBUS_CLOCK_HZ                        20971520U
+
+- Update FreeRTOSConfig.h as needed to enable/disable RTOS functionality (see FreeRTOS.org)
+
+

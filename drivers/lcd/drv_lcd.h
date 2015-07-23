@@ -44,8 +44,8 @@ void lcd_initialize(void);
 
 /**
   * @brief Set cursor to given line and column within the line
-  * @param line The line to set cursor to: 1 or 2
-  * @param column The column within the line to set cursor to: 1 - 15
+  * @param line The line to set cursor to: 1 - 4
+  * @param column The column within the line to set cursor to: 1 - 20
   * @return none
   * @note
   *
