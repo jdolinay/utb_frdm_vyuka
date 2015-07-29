@@ -279,6 +279,10 @@ void vPortSVCHandler(void); /* SVC interrupt handler */
 void vPortPendSVHandler(void); /* PendSV interrupt handler */
 void vPortTickHandler(void); /* Systick interrupt handler */
 
+/* jd: pokus
+ * asi nemuze fungovat...preklad bude ok, ale nemelo by fungovat :)*/
+#define	SysTick_Handler	vPortTickHandler1
+
 #ifdef __cplusplus
 }
 #endif
