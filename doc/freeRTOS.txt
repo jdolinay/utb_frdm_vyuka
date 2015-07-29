@@ -13,7 +13,8 @@ To make it work in KDS 3.0.0:
 -- FreeRTOS/src ("${workspace_loc:/${ProjName}/Sources/FreeRTOS/src}")
 (Use Workspace button to select the path)
 
-- Replace startup_MKL25Z4.s in your project with startup_MKL25Z4.s from /FreeRTOS
+- Delete startup_MKL25Z4.s from Project_Settings/Startup_Code in your project (or exclude it from build).
+A version of this file from FreeRTOS directory will be used.
 
 - Specify CPU clock and BUS clock in FreeRTOSConfig.h:
    #define configCPU_CLOCK_HZ                        20971530U
@@ -23,8 +24,8 @@ To make it work in KDS 3.0.0:
 
 
 
-Alternative option instead of replacing startup_MKL25Z4.s file: 
-- Open startup_MKL25Z4.s and replace names of interrupt handlers:
+Alternative option instead of deleting the startup_MKL25Z4.s file: 
+- Open Project_Settings/Startup_Code/startup_MKL25Z4.s and replace names of interrupt handlers:
     .long   /*SVC_Handler*/ vPortSVCHandler		    /* SVCall Handler*/
     .long   0                                               /* Reserved*/
     .long   0                                               /* Reserved*/

@@ -4,8 +4,7 @@
 /*            MKL25Z4                                                                     */
 /*  @version: 2.5                                                                         */
 /*  @date:    2015-2-19                                                                   */
-/*  @build:   b150220  																	  */
-/*  Interrupt vectors changed for FreeRTOS, see vPortSVCHandler, vPortPendSVHandler, and vPortTickHandler below.  */
+/*  @build:   b150220                                                                     */
 /* ---------------------------------------------------------------------------------------*/
 /*                                                                                        */
 /* Copyright (c) 1997 - 2015 , Freescale Semiconductor, Inc.                              */
@@ -56,11 +55,11 @@ __isr_vector:
     .long   0                                               /* Reserved*/
     .long   0                                               /* Reserved*/
     .long   0                                               /* Reserved*/
-    .long   vPortSVCHandler		    /*SVC_Handler*/ 		/* SVCall Handler*/
+    .long   SVC_Handler                                     /* SVCall Handler*/
     .long   0                                               /* Reserved*/
     .long   0                                               /* Reserved*/
-    .long   vPortPendSVHandler      /*PendSV_Handler */ 	/* PendSV Handler*/
-    .long   vPortTickHandler        /*SysTick_Handler */	/* SysTick Handler*/
+    .long   PendSV_Handler                                  /* PendSV Handler*/
+    .long   SysTick_Handler                                 /* SysTick Handler*/
 
                                                             /* External Interrupts*/
     .long   DMA0_IRQHandler                                 /* DMA channel 0 transfer complete*/
