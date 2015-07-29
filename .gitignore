@@ -9,4 +9,5 @@
 *.epp
 *.d
 #ignore settings files which are changed by KDS often
-.settings/
+**/*/.settings/*.*
+projects/*/.settings/language.settings.xml
