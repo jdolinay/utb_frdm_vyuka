@@ -8,4 +8,5 @@
 *.elf
 *.epp
 *.d
-
+#ignore settings files which are changed by KDS often
+.settings/
