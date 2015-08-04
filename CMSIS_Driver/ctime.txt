@@ -1,0 +1,20 @@
+Ovladace podle standardu CMSIS, zalozeno na implementaci Keil pro LPC18xx
+
+[root] - soubory podle keil = drivery pro jednotlive MCU
+
+/arm - soubory poskytovane arm tj. "generic" hlavickove soubory a templates pro drivery
+
+/Config - obsahuje .h soubor s konfiguraci ovladacu, napr. piny, ktere pouzivaji?
+
+
+Usporadani slozek podle ARM je asi takoveto:
+CMSIS/Driver/Include - .h soubory obecne pro danou "tridu" driveru, napr. Driver_I2C.h
+CMSIS/Pack/ - "balicky" s implementaci podle vyrobce nebo MCU?
+ CMSIS/Pack/[vyrobce_nebo_mcu]/CMSIS_Driver - ovladace daneho (vyrobce nebo MCU)?
+ CMSIS/Pack/[vyrobce_nebo_mcu]/CMSIS_Driver/Config - RTE_device.h - konfigurace pro tyto drivery.
+
+
+Zjednodusene usporadani pro nase FRDM programy:
+
+CMSIS_Driver - obsahuje i "obecne" ARM soubory .h pro drivery i konkretni implementaci.
+CMSIS_Driver/Config - obsahuje RTE_Device.h
