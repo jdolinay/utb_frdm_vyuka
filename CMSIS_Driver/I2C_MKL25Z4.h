@@ -131,7 +131,12 @@ typedef struct {
   uint8_t               flags;              // Control and state flags
   uint8_t               sla_rw;             // Slave address and RW bit
   bool                  pending;            // Transfer pending (no STOP)
-  uint8_t               stalled;            // Stall mode status flags
+  uint8_t               stalled;            // Stall mode status flags;
+  // jd: stalled means after MasterTransmit a MasterReceive will follow, this is used
+  // when sending command to slave to which slave sends data in response. After
+  // MasterTransmit we are "stalled" and wait for call to MasterReceive which then
+  // sends RE-STAR etc. on the bus
+
  // jd: not used: uint8_t               con_aa;             // I2C slave CON flag
   int32_t               cnt;                // Master transfer count
   uint8_t              *data;               // Master data to transfer

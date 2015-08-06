@@ -488,8 +488,8 @@ i2c_status_t I2C_DRV_MasterReceive(I2C_RESOURCES *i2c,
 
     /* Enable i2c interrupt.*/
     I2C_HAL_ClearInt(base);
-    // jd: viz nize, nechci pouzit interrupt:
-    // I2C_HAL_SetIntCmd(base, true);
+    //  pouzit interrupt:
+    I2C_HAL_SetIntCmd(base, true);
 
     /* Generate start signal. */
     I2C_HAL_SendStart(base);
@@ -514,13 +514,15 @@ i2c_status_t I2C_DRV_MasterReceive(I2C_RESOURCES *i2c,
         }
 
         /* Dummy read to trigger receive of next byte in interrupt. */
-        //I2C_HAL_ReadByte(base);
+        I2C_HAL_ReadByte(base);
 
         if (isBlocking)
         {
             /* Wait for the transfer to finish.*/
-            //I2C_DRV_MasterWait(i2c, timeout_ms);
-        	 // JD: toto nejde pouzit, nechci vyuzit interrupt, nemam ho..
+            I2C_DRV_MasterWait(i2c, timeout_ms);
+        	 // JD: toto nejde pouzit, transfer comlete neni nikdy nastaven.
+
+            /*
         	I2C_HAL_ReadByte(base);	// toto zahaji cteni
         	while ( remainingBytes > 0)
         	{
@@ -539,7 +541,7 @@ i2c_status_t I2C_DRV_MasterReceive(I2C_RESOURCES *i2c,
         		// toto zahaji cteni dalsiho byte
         		*rxBuff++ =	I2C_HAL_ReadByte(base); // i2c->reg->D;
         		remainingBytes--;
-        	}
+        	}*/
         }
     }
 #if 0
@@ -876,10 +878,34 @@ static int32_t I2Cx_MasterTransmit (uint32_t       addr,
     return ARM_DRIVER_ERROR_BUSY;
   }
 
-  NVIC_DisableIRQ (i2c->i2c_ev_irq);
+  /*------ nove */
+  /*
+   Pseudokod pro master transmit dle CMSIS filozofie, bez reseni chybovych kodu
+   viz popis teorie v i2c_rozhrani.txt
+   Dle CMSIS filozofie pro MasterTransmit jsou mozne tyto scenare:
+   - master posila jen prikazy=data do slave
+   - master chce od slave nejaka data ke kterym musi poslat prikaz, tj. neukoncuje po odeslani dat
+   komunikaci ale posle RE-START a prijima data
+   TODO: nevim zda restart resi uz Transmit (podle pending flag) a nebo az MasterReceive
+
+   Nastavit interni data
+   Nastavit se na master?
+   TODO: nastavit, zda se ma poslat NACK ?
+    > nemyslim, vzdy se generuje ACK
+   Poslat start
+   Zapsat do DATA registru = zacit transfer (na rozdil od LPC asi KL25 nevyvola interrupt jen zapisem start...)
+    tato data musi byt slave address.
+    REMEM: neresim 10-bit address, ani LPC kod to neresi.
+   Konec
+
+   */
+  /*------ end nove */
+
+  //NVIC_DisableIRQ (i2c->i2c_ev_irq);
+  I2C_HAL_SetIntCmd(i2c->reg, false);
 
   /* Set control variables */
-  i2c->ctrl->sla_rw  = addr << 1;
+  i2c->ctrl->sla_rw  = addr << 1;	// jd: zde vzdy posilame RW bit = 0 tj. write
   i2c->ctrl->pending = xfer_pending;
   i2c->ctrl->data    = (uint8_t *)data;
   i2c->ctrl->num     = num;
@@ -898,11 +924,17 @@ static int32_t I2Cx_MasterTransmit (uint32_t       addr,
 	  // jd: from KSDK
 	  /* Set direction to send for sending of address and data. */
 	  I2C_HAL_SetDirMode(i2c->reg, kI2CSend);
-	  I2C_HAL_SendStart(i2c->reg);
-	  // jd: TODO: mozna zde odeslat adresu blocking jako v KSDK
+	  I2C_HAL_SendStart(i2c->reg);		// also sets I2C to master mode if not already set
+	  // NOTE: 1 byte transmitted to trigger interrupt is not included in  i2c->ctrl->num
+	  // this 1st byte is the slave address
+	  i2c->ctrl->cnt = 0;	// this is used as index to data buffer in ISR
+	  I2C_HAL_WriteByte(i2c->reg, i2c->ctrl->sla_rw);	/* Send slave address */
   }
+  // TODO: else zrusit stalled?
 
-  NVIC_EnableIRQ (i2c->i2c_ev_irq);
+  //NVIC_EnableIRQ (i2c->i2c_ev_irq);
+  //I2C_HAL_ClearInt(i2c->reg);
+  I2C_HAL_SetIntCmd(i2c->reg, true);
 
   return ARM_DRIVER_OK;
 }
@@ -942,10 +974,11 @@ static int32_t I2Cx_MasterReceive (uint32_t       addr,
     return ARM_DRIVER_ERROR_BUSY;
   }
 
-  NVIC_DisableIRQ (i2c->i2c_ev_irq);
+  //NVIC_DisableIRQ (i2c->i2c_ev_irq);
+  I2C_HAL_SetIntCmd(i2c->reg, false);
 
   /* Set control variables */
-  i2c->ctrl->sla_rw  = (addr << 1) | 0x01;
+  i2c->ctrl->sla_rw  = (addr << 1) | 0x01;	// Address with Read bit
   i2c->ctrl->pending = xfer_pending;
   i2c->ctrl->data    = data;
   i2c->ctrl->num     = num;
@@ -957,15 +990,32 @@ static int32_t I2Cx_MasterReceive (uint32_t       addr,
   i2c->ctrl->status.direction        = 0;	/* 0 = transmit, 1 = receive */
   i2c->ctrl->status.arbitration_lost = 0;
   i2c->ctrl->status.bus_error        = 0;
-  if (!i2c->ctrl->stalled) {
-    //i2c->reg->CONSET = I2C_CON_STA | i2c->ctrl->con_aa;
+
+  /* If not stalled, it means we do not generate RE-START, this is simple
+    master receive operation: send slave address and slave responds with data*/
+  if (!i2c->ctrl->stalled)
+  {
+	  //i2c->reg->CONSET = I2C_CON_STA | i2c->ctrl->con_aa;
 	  //i2c->reg->C1 |= I2C_C1_MST_MASK;
 	  //i2c->reg->C1 &= ~I2C_C1_TXAK_MASK;	// enable ACK
 	  I2C_HAL_SetDirMode(i2c->reg, kI2CSend);	/* sending address */
 	  I2C_HAL_SendStart(i2c->reg);
+	  I2C_HAL_WriteByte(i2c->reg, i2c->ctrl->sla_rw);	/* Send slave address */
+	  i2c->ctrl->cnt = 0;	// received 0 bytes of data so far
+  }
+  else
+  {
+		/* If stalled, we are called after MasterTransmit and we should send Re-START with address*/
+		// TODO: podle me zde zatim stejny kod...
+	  	I2C_HAL_SetDirMode(i2c->reg, kI2CSend); /* sending address */
+		I2C_HAL_SendStart(i2c->reg);
+		I2C_HAL_WriteByte(i2c->reg, i2c->ctrl->sla_rw); /* Send slave address */
+		i2c->ctrl->cnt = 0;	// received 0 bytes of data so far
   }
 
-  NVIC_EnableIRQ (i2c->i2c_ev_irq);
+  //NVIC_EnableIRQ (i2c->i2c_ev_irq);
+  // pozor: tim bych smazal interrupt ktery vyvolal WriteByte! I2C_HAL_ClearInt(i2c->reg);
+  I2C_HAL_SetIntCmd(i2c->reg, true);
 
   return ARM_DRIVER_OK;
 }
@@ -1216,6 +1266,138 @@ static uint32_t I2Cx_MasterHandler (I2C_RESOURCES *i2c) {
   /* jd: Clear the interrupt flag*/
   I2C_HAL_ClearInt(i2c->reg);
 
+  /*------ nove */
+    /*
+     Pseudokod pro master handler dle CMSIS filozofie, bez reseni chybovych kodu
+     viz popis teorie v i2c_rozhrani.txt
+     Dle CMSIS filozofie pro MasterTransmit jsou mozne tyto scenare:
+     - master posila jen prikazy=data do slave
+     - master chce od slave nejaka data ke kterym musi poslat prikaz, tj. neukoncuje po odeslani dat
+     komunikaci ale posle RE-START a prijima data
+     TODO: nevim zda restart resi uz Transmit (podle pending flag) a nebo az MasterReceive
+
+     POZOR: urcite neresiz metodou LPC kde je velky switch pro status, ktery odpovida kodu
+     primo v hardware, to se spatne mapuje na KL25Z :(
+
+
+     Kod:
+     jsme v rezimu prijmu nebo vysilani?
+     vysilani:
+
+     konec vysilani
+     prijem:
+     konec prijem
+     */
+
+    /* Using code for I2C_STAT_MA_ALOST - Arbitration lost */
+  	if ( I2C_HAL_GetStatusFlag(i2c->reg, kI2CArbitrationLost) )	{
+  	      i2c->ctrl->status.arbitration_lost = 1;
+  	      i2c->ctrl->status.busy             = 0;
+  	      i2c->ctrl->status.mode             = 0;
+  	      event = ARM_I2C_EVENT_ARBITRATION_LOST |
+  	              ARM_I2C_EVENT_TRANSFER_DONE    |
+  	              ARM_I2C_EVENT_TRANSFER_INCOMPLETE;
+  	      I2C_HAL_SetIntCmd(i2c->reg, false);
+  	      I2C_HAL_SendStop(i2c->reg);
+  	      I2C_HAL_ClearArbitrationLost(i2c->reg);
+  	      return (event);	// TODO: ? podle PLC co se ma vracet a ma se volant pripadny user handler
+  	}
+
+    /* Get current master transfer direction */
+    i2c_direction_t direction = I2C_HAL_GetDirMode(i2c->reg);
+	if (direction == kI2CSend)
+	{ 	/* Sending data */
+
+		if (I2C_HAL_GetStatusFlag(i2c->reg, kI2CReceivedNak)) {
+			/* Record that we got a NAK */
+			i2c->ctrl->status.bus_error = 1;	// TODO: toto na event podle PLC...
+			/* Got a NAK, so we're done with this transfer */
+			I2C_HAL_SetIntCmd(i2c->reg, false);
+			I2C_HAL_SendStop(i2c->reg);
+			i2c->ctrl->status.busy = 0;
+			return 0;	// todo: 1 exit point!
+		}
+
+		if (i2c->ctrl->stalled == I2C_MASTER) {
+			/* First call to MasterReceive after MasterTransmit */
+
+			// volani ISR po MasterReceive, prepnout do rezimu prijmu
+			I2C_HAL_SetDirMode(i2c->reg, kI2CReceive);
+			i2c->ctrl->status.direction = 1;	/* 0 = transmit, 1 = receive */
+			i2c->ctrl->stalled = 0;
+
+			// precist prvni data pro spusteni transferu
+			// pokud cteme 1 bajt, musime pred spustenim cteni nastavit NACK
+			if (i2c->ctrl->num == 1 )
+				I2C_HAL_SendNak(i2c->reg);
+			else
+				I2C_HAL_SendAck(i2c->reg);
+
+			/* Dummy read to trigger receive of next byte in interrupt. */
+			I2C_HAL_ReadByte(i2c->reg);
+
+		} else {
+
+			/* Normal transmit */
+
+			// a) po poslani dat stop
+			// b) po poslani dat do receive rezimu (u KSDK uz je tento kod v else pro receive protoze
+			// pri poslani adresy a commandu uz prepne na receive
+			if (i2c->ctrl->num > 0) {
+				/* Transmit next byte and update buffer index */
+				I2C_HAL_WriteByte(i2c->reg, i2c->ctrl->data[i2c->ctrl->cnt]);
+				i2c->ctrl->cnt++;
+				i2c->ctrl->num--;
+			} else {
+				/* no more data to send */
+
+				if (!i2c->ctrl->pending) { /* If will be receiving data, do not send stop */
+					/* Finish send data, send STOP, disable interrupt */
+					I2C_HAL_SetIntCmd(i2c->reg, false);
+					I2C_HAL_SendStop(i2c->reg);
+					i2c->ctrl->status.busy = 0;
+				} else {
+					// budeme cekat na volani MasterReceive
+					i2c->ctrl->stalled = I2C_MASTER;
+					i2c->ctrl->status.busy = 0;
+					// pozor: prepnout do receive rezi nemuzu, volani MasterReceive
+					// nejdriv posila adresu, coz se musi dit v Send rezimu
+				}
+			}
+		}
+
+	}
+	else
+	{ /* Receiving data (mater receive) */
+
+		i2c->ctrl->num--;
+
+		switch (i2c->ctrl->num) {
+		case 0x0U:
+			/* Finish receive data, send STOP, disable interrupt */
+			I2C_HAL_SetIntCmd(i2c->reg, false);
+			I2C_HAL_SendStop(i2c->reg);
+			i2c->ctrl->status.busy = 0;
+			break;
+		case 0x1U:
+			/* For the byte before last, we need to set NAK */
+			I2C_HAL_SendNak(i2c->reg);
+			break;
+		default:
+			I2C_HAL_SendAck(i2c->reg);
+			break;
+		}
+
+		/* Read recently received byte into buffer and update buffer index */
+		i2c->ctrl->data[i2c->ctrl->cnt++] = I2C_HAL_ReadByte(i2c->reg);
+	}
+
+	return 0;
+}	/* end of MasterHandler*/
+
+  /*------ nove */
+#if 0
+
   if (i2c->ctrl->stalled) {
     /* Master resumes with repeated START here */
     /* Stalled states: I2C_STAT_MA_DT_A        */
@@ -1226,6 +1408,7 @@ static uint32_t I2Cx_MasterHandler (I2C_RESOURCES *i2c) {
     I2C_HAL_SendStart(i2c->reg);
     return (event);	// nothing else to do
   }
+
 
 
   /* pseudokod pro moje udalosti
@@ -1549,6 +1732,7 @@ jd_end:
   return (event);
 #endif
 }
+#endif
 
 /**
   \fn          void I2Cx_SlaveHandler (I2C_RESOURCES *i2c)

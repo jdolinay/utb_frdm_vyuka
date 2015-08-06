@@ -65,6 +65,7 @@ int main(void)
 	uint8_t sendSize = 0;		// number of bytes to send
 	uint8_t dataReceive[8];
 	uint32_t temperature;
+	ARM_I2C_STATUS status;
 
 	// TODO: enable clock for ports used by I2C - should be in driver?
 	// 1. Povolime hodinovy signal pro port E
@@ -81,8 +82,11 @@ int main(void)
 
 	// Inicializace teplotniho snimace
 	// status = I2C1_Kit_SendBlock(cmd_lm75_init, 2, &bwr);
-	//Driver_I2C1.MasterTransmit(I2C_ADR_TEMP_SENSOR, cmd_lm75_init, 2, false);
-	I2C1_DRV_MasterSend(I2C_ADR_TEMP_SENSOR, 0, 0, cmd_lm75_init, 2);
+	Driver_I2C1.MasterTransmit(I2C_ADR_TEMP_SENSOR, cmd_lm75_init, 2, false);
+	status = Driver_I2C1.GetStatus();
+	while ( status.busy )
+		status = Driver_I2C1.GetStatus();
+	//I2C1_DRV_MasterSend(I2C_ADR_TEMP_SENSOR, 0, 0, cmd_lm75_init, 2);
 
 
 	while (1) {
@@ -91,13 +95,20 @@ int main(void)
 		//status = I2C1_Kit_SendChar(LM75_REG_TEMP);
 		dataSend[0] = LM75_REG_TEMP;
 		sendSize = 1;
-		//Driver_I2C1.MasterTransmit(I2C_ADR_TEMP_SENSOR, dataSend, sendSize, false);
+		Driver_I2C1.MasterTransmit(I2C_ADR_TEMP_SENSOR, dataSend, sendSize, true);
+		status = Driver_I2C1.GetStatus();
+		while ( status.busy )
+			status = Driver_I2C1.GetStatus();
 
 		//I2C1_Kit_RecvBlock(buffer,2,&brd);
-		//Driver_I2C1.MasterReceive(I2C_ADR_TEMP_SENSOR, dataReceive, 2, false);
-		// POZOR: masterReceive je funkce, ktera odesle zadany command a pak prijme odpoved,
-		//
-		I2C1_DRV_MasterReceive(I2C_ADR_TEMP_SENSOR, dataSend, sendSize,dataReceive, 2);
+		Driver_I2C1.MasterReceive(I2C_ADR_TEMP_SENSOR, dataReceive, 2, false);
+		status = Driver_I2C1.GetStatus();
+		while ( status.busy )
+			status = Driver_I2C1.GetStatus();
+
+		// KSDK I2C1_DRV_MasterReceive je funkce, ktera odesle zadany command a pak prijme odpoved,
+		//I2C1_DRV_MasterReceive(I2C_ADR_TEMP_SENSOR, dataSend, sendSize,dataReceive, 2);
+
 		temperature = (256 * dataReceive[0] + dataReceive[1]) >> 5;
 		// prepocet na st.C
 		temperature = (temperature * 1270) / 0x3f8;
