@@ -46,7 +46,7 @@
  4.8.15 - asi nutno prepracovat master handler protoze hw je jine nez LPC a resit podle jejich
  stavu je komplikovane, spis se drzet KSDK :)
  slave handler zatim neimplementuju.
- TODO: jak resit vyslani prikazu a prijem dat asynchronne, nebyly by lepsi blokujici funkce?
+
  5.8.2015 pokus s funkcemi z KSDK jako I2C_DRV_MasterSendDataBlocking,
  POZOR: Nejde tak snadno pouzit :(
  On totiz blocking rezim KSDK stejne vyuziva preruseni pro prijem a jen ceka na semafor, ktery
@@ -58,7 +58,13 @@
  nejde? ale ani int flag neni generovat pokud neni ack...
  Mozna jednodussi rozchodit existujici reseni, overit, ze spravnce vysila
  repeasted start atd.
- * */
+
+ 6.8.2015 Funguje cteni vlhkosti = opraven pripad masterReceive kde posilam jen adresu slave
+ a pak prepnu na read - viz ale TODO v else a cely kod je dost neprehledny...
+ Pri cteni teploty casto je arbitration lost, mozna kdyz se pokousim udelat
+  start a bus je busy...? HAL fce jako stop ale ceka na provedeni, to je ok...
+  Pokracuj: ucesat/promyslet kod v ISR handler,...
+ */
 
 #include <string.h>
 
@@ -115,6 +121,7 @@ static uint32_t GetClockFreq (uint32_t clk_src)
 	return clk;
 }
 
+#if 0
 /**
   \fn          void CompleteTransfer (void)
   \brief       Send STOP and disable interrupt when error happens or I2C transfer finishes.
@@ -563,7 +570,7 @@ i2c_status_t I2C_DRV_MasterReceive(I2C_RESOURCES *i2c,
 
     return  kStatus_I2C_Success;	//master->status;
 }
-
+#endif
 
 
 
@@ -863,7 +870,8 @@ static int32_t I2Cx_MasterTransmit (uint32_t       addr,
                                     bool           xfer_pending,
                                     I2C_RESOURCES *i2c) {
 
-  if (!data || !num || (addr > 0x7F)) {
+	// jd: num == 0 is valid request to send just slave address and write bit
+  if (!data || /*!num ||*/ (addr > 0x7F)) {
     /* Invalid parameters */
     return ARM_DRIVER_ERROR_PARAMETER;
   }
@@ -1310,11 +1318,12 @@ static uint32_t I2Cx_MasterHandler (I2C_RESOURCES *i2c) {
 
 		if (I2C_HAL_GetStatusFlag(i2c->reg, kI2CReceivedNak)) {
 			/* Record that we got a NAK */
+			i2c->ctrl->status.busy = 0;
+			i2c->ctrl->status.mode = 0;
 			i2c->ctrl->status.bus_error = 1;	// TODO: toto na event podle PLC...
 			/* Got a NAK, so we're done with this transfer */
 			I2C_HAL_SetIntCmd(i2c->reg, false);
 			I2C_HAL_SendStop(i2c->reg);
-			i2c->ctrl->status.busy = 0;
 			return 0;	// todo: 1 exit point!
 		}
 
@@ -1336,10 +1345,26 @@ static uint32_t I2Cx_MasterHandler (I2C_RESOURCES *i2c) {
 			/* Dummy read to trigger receive of next byte in interrupt. */
 			I2C_HAL_ReadByte(i2c->reg);
 
-		} else {
+		} else if ( i2c->ctrl->sla_rw & 0x01 ) {
+			/* MasterReceive, after sending address and receiving ACK from slave,
+			  we switch to receive mode and read data */
+			// TODO: jak spravne poznat, ze toto je vyvolano z masterReceive a chceme prepnout smer?
+			I2C_HAL_SetDirMode(i2c->reg, kI2CReceive);
+			i2c->ctrl->status.direction = 1; /* 0 = transmit, 1 = receive */
+
+			// precist prvni data pro spusteni transferu
+			// pokud cteme 1 bajt, musime pred spustenim cteni nastavit NACK
+			if (i2c->ctrl->num == 1)
+				I2C_HAL_SendNak(i2c->reg);
+			else
+				I2C_HAL_SendAck(i2c->reg);
+
+			/* Dummy read to trigger receive of next byte in interrupt. */
+			I2C_HAL_ReadByte(i2c->reg);
+		}
+		else {
 
 			/* Normal transmit */
-
 			// a) po poslani dat stop
 			// b) po poslani dat do receive rezimu (u KSDK uz je tento kod v else pro receive protoze
 			// pri poslani adresy a commandu uz prepne na receive
@@ -1351,16 +1376,18 @@ static uint32_t I2Cx_MasterHandler (I2C_RESOURCES *i2c) {
 			} else {
 				/* no more data to send */
 
-				if (!i2c->ctrl->pending) { /* If will be receiving data, do not send stop */
+				if (!i2c->ctrl->pending) {
 					/* Finish send data, send STOP, disable interrupt */
 					I2C_HAL_SetIntCmd(i2c->reg, false);
 					I2C_HAL_SendStop(i2c->reg);
 					i2c->ctrl->status.busy = 0;
+					i2c->ctrl->status.mode = 0;
 				} else {
+					 /* If will be receiving data, do not send stop */
 					// budeme cekat na volani MasterReceive
 					i2c->ctrl->stalled = I2C_MASTER;
 					i2c->ctrl->status.busy = 0;
-					// pozor: prepnout do receive rezi nemuzu, volani MasterReceive
+					// pozor: prepnout do receive rezi nemuzu zde, volani MasterReceive
 					// nejdriv posila adresu, coz se musi dit v Send rezimu
 				}
 			}
