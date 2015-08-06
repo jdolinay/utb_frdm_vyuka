@@ -24,8 +24,8 @@
  * Project:      I2C Driver Definitions for Freescale MKL25Z4
  * -------------------------------------------------------------------------- */
 
-#ifndef __I2C_LPC18XX_H
-#define __I2C_LPC18XX_H
+#ifndef __I2C_MKL25Z4_H
+#define __I2C_MKL25Z4_H
 
 #include "MKL25Z4.h"
 
@@ -42,27 +42,12 @@ extern ARM_DRIVER_I2C Driver_I2C1;
 #endif
 #endif
 
-// todo: jen pro testy:
-bool I2C1_DRV_MasterReceive(	uint32_t slaveAddress,
-                                          const uint8_t * cmdBuff,
-                                          uint32_t cmdSize,
-                                          uint8_t * rxBuff,
-                                          uint32_t rxSize
-                                         );
-
-bool I2C1_DRV_MasterSend(uint32_t slaveAddress,
-                                       const uint8_t * cmdBuff,
-                                       uint32_t cmdSize,
-                                       const uint8_t * txBuff,
-                                       uint32_t txSize
-                                       );
 
 /* Clock Control Unit register */
 /* jd: not used
 #define CCU_CLK_CFG_RUN     (1 << 0)
 #define CCU_CLK_CFG_AUTO    (1 << 1)
 #define CCU_CLK_STAT_RUN    (1 << 0)
-
 #define CLK_SRC_PLL1        0x09            // I2C clock source
 */
 
@@ -96,6 +81,8 @@ bool I2C1_DRV_MasterSend(uint32_t slaveAddress,
 #define I2C_STAT_BUSERR      0x00           // I2C Bus error
 
 /* I2C Status Master mode */
+/* jd: not used */
+/*
 #define I2C_STAT_MA_START    0x08           // START transmitted
 #define I2C_STAT_MA_RSTART   0x10           // Repeated START transmitted
 #define I2C_STAT_MA_SLAW_A   0x18           // SLA+W transmitted, ACK received
@@ -107,8 +94,10 @@ bool I2C1_DRV_MasterSend(uint32_t slaveAddress,
 #define I2C_STAT_MA_SLAR_NA  0x48           // SLA+R transmitted, no ACK recvd
 #define I2C_STAT_MA_DR_A     0x50           // Data received, ACK returned
 #define I2C_STAT_MA_DR_NA    0x58           // Data received, no ACK returned
-
+*/
 /* I2C Status Slave mode */
+/* jd: not used */
+/*
 #define I2C_STAT_SL_SLAW_A   0x60           // SLA+W received, ACK returned
 #define I2C_STAT_SL_ALOST_MW 0x68           // Arbitration lost SLA+W in Master mode
 #define I2C_STAT_SL_GCA_A    0x70           // General address recvd, ACK returned
@@ -123,6 +112,7 @@ bool I2C1_DRV_MasterSend(uint32_t slaveAddress,
 #define I2C_STAT_SL_DT_A     0xB8           // Data transmitted, ACK received
 #define I2C_STAT_SL_DT_NA    0xC0           // Data transmitted, no ACK received
 #define I2C_STAT_SL_LDT_A    0xC8           // Last data transmitted, ACK received
+*/
 
 /* I2C Control Information */
 typedef struct {
@@ -132,12 +122,15 @@ typedef struct {
   uint8_t               sla_rw;             // Slave address and RW bit
   bool                  pending;            // Transfer pending (no STOP)
   uint8_t               stalled;            // Stall mode status flags;
-  // jd: stalled means after MasterTransmit a MasterReceive will follow, this is used
-  // when sending command to slave to which slave sends data in response. After
-  // MasterTransmit we are "stalled" and wait for call to MasterReceive which then
-  // sends RE-STAR etc. on the bus
+  /* jd: stalled means after MasterTransmit a MasterReceive will follow.
+  This is used when sending command to slave to which slave sends data in response. After
+  MasterTransmit we are "stalled" and wait for call to MasterReceive which then
+  sends RE-STAR etc. on the bus.
+  */
 
- // jd: not used: uint8_t               con_aa;             // I2C slave CON flag
+  /* jd: not used
+  uint8_t               con_aa;             // I2C slave CON flag
+  */
   int32_t               cnt;                // Master transfer count
   uint8_t              *data;               // Master data to transfer
   uint32_t              num;                // Number of bytes to transfer
@@ -156,4 +149,4 @@ typedef struct {
   I2C_CTRL             *ctrl;               // Run-Time control information
 } const I2C_RESOURCES;
 
-#endif /* __I2C_LPC18XX_H */
+#endif /* __I2C_MKL25Z4_H */

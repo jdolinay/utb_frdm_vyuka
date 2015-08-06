@@ -78,52 +78,12 @@ int main(void)
 	Driver_I2C1.PowerControl(ARM_POWER_FULL);
 	Driver_I2C1.Control(ARM_I2C_BUS_SPEED, ARM_I2C_BUS_SPEED_STANDARD);
 
-	// POZOR: masterTransmit nemusi resit smer R/W, ten je vzdy 0,
+	// POZOR: Funkce MasterTransmit nemusi resit smer R/W, ten je vzdy 0,
 	// masterReceive posila s r/w nastaveno na R tj. do adresy prida 0
 	/* Note:  r/w - read is 1, write is 0. */
 
-	MeasureHumidity();
+	//MeasureHumidity();
 	MeasureTemperature();
-
-	while(1);
-
-	// puvodni testovaci kod...
-	// Inicializace teplotniho snimace
-	// status = I2C1_Kit_SendBlock(cmd_lm75_init, 2, &bwr);
-	Driver_I2C1.MasterTransmit(I2C_ADR_TEMP_SENSOR, cmd_lm75_init, 2, false);
-	status = Driver_I2C1.GetStatus();
-	while ( status.busy )
-		status = Driver_I2C1.GetStatus();
-	//I2C1_DRV_MasterSend(I2C_ADR_TEMP_SENSOR, 0, 0, cmd_lm75_init, 2);
-
-
-
-
-	while (1) {
-		// Cteni teploty
-		// Cteni Temp registru - hodnota Pointer = 0
-		//status = I2C1_Kit_SendChar(LM75_REG_TEMP);
-		dataSend[0] = LM75_REG_TEMP;
-		sendSize = 1;
-		Driver_I2C1.MasterTransmit(I2C_ADR_TEMP_SENSOR, dataSend, sendSize, true);
-		status = Driver_I2C1.GetStatus();
-		while ( status.busy )
-			status = Driver_I2C1.GetStatus();
-
-		//I2C1_Kit_RecvBlock(buffer,2,&brd);
-		Driver_I2C1.MasterReceive(I2C_ADR_TEMP_SENSOR, dataReceive, 2, false);
-		status = Driver_I2C1.GetStatus();
-		while ( status.busy )
-			status = Driver_I2C1.GetStatus();
-
-		// KSDK I2C1_DRV_MasterReceive je funkce, ktera odesle zadany command a pak prijme odpoved,
-		//I2C1_DRV_MasterReceive(I2C_ADR_TEMP_SENSOR, dataSend, sendSize,dataReceive, 2);
-
-		temperature = (256 * dataReceive[0] + dataReceive[1]) >> 5;
-		// prepocet na st.C
-		temperature = (temperature * 1270) / 0x3f8;
-	}
-
 
     /* This for loop should be replaced. By default this loop allows a single stepping. */
     for (;;) {
@@ -135,23 +95,23 @@ int main(void)
 
 /*
  // 3) Snimac vlhkosti HIH6130
-	  //------------------------------------
-	  status = I2C1_Kit_SelectSlave(I2C_ADR_HMDT_SENSOR);
-	  if (hih_measure_status == 0)
-	  {
-		  status = I2C1_Kit_SendChar(0);					// measure request, mereni trva cca 36.65 ms
-	  }
-	  // Cteni vlhkosti - 2 bajty
-	  I2C1_Kit_RecvBlock(buffer,2,&brd);					// cteni vlhkosti
-	  hih_measure_status = buffer[0] >> 6;					// ulozeni stavu HIH
-	  value = 256*(buffer[0] & 0b00111111)+buffer[1];
+ //------------------------------------
+ status = I2C1_Kit_SelectSlave(I2C_ADR_HMDT_SENSOR);
+ if (hih_measure_status == 0)
+ {
+ status = I2C1_Kit_SendChar(0);					// measure request, mereni trva cca 36.65 ms
+ }
+ // Cteni vlhkosti - 2 bajty
+ I2C1_Kit_RecvBlock(buffer,2,&brd);					// cteni vlhkosti
+ hih_measure_status = buffer[0] >> 6;					// ulozeni stavu HIH
+ value = 256*(buffer[0] & 0b00111111)+buffer[1];
 
-	  // Vypocet vlhkosti
-	  value = ((int)value * 100) / 16383;
+ // Vypocet vlhkosti
+ value = ((int)value * 100) / 16383;
 
-	  disp_set_cursor(4,17);
-	  sprintf(buffer,"%u%%",value);
-	  disp_text(buffer);
+ disp_set_cursor(4,17);
+ sprintf(buffer,"%u%%",value);
+ disp_text(buffer);
  */
 uint32_t MeasureHumidity(void)
 {
@@ -164,7 +124,8 @@ uint32_t MeasureHumidity(void)
 
 
 	while (1) {
-		/* Zde je chyba v Dastyho kodu, measurement request neni poslani byte s hodnotou 0
+		/* Zde je chyba v Dastyho kodu? nebo to PE jinak neumi?
+		 * Measurement request neni poslani byte s hodnotou 0
 		 * ale jen slave adresy s bitem RW = 0 tj. prikaz write ale bez dat.
 		if (hih_measure_status == 0) {
 			dataSend[0] = 0;
@@ -176,7 +137,7 @@ uint32_t MeasureHumidity(void)
 		}*/
 		Driver_I2C1.MasterTransmit(I2C_ADR_HMDT_SENSOR, dataSend, 0, false);
 		status = Driver_I2C1.GetStatus();
-		delay();	// cas na mereni
+		delay();	// dame senzoru cas na mereni
 
 		Driver_I2C1.MasterReceive(I2C_ADR_HMDT_SENSOR, dataReceive, 4, false);
 		status = Driver_I2C1.GetStatus();
