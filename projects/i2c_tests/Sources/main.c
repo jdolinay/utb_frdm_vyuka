@@ -75,12 +75,15 @@ int main(void)
 	Driver_I2C1.PowerControl(ARM_POWER_FULL);
 	Driver_I2C1.Control(ARM_I2C_BUS_SPEED, ARM_I2C_BUS_SPEED_STANDARD);
 
+	// POZOR: masterTransmit nemusi resit smer R/W, ten je vzdy 0,
+	// masterReceive posila s r/w nastaveno na R tj. do adresy prida 0
+	/* Note:  r/w - read is 1, write is 0. */
 
 	// Inicializace teplotniho snimace
 	// status = I2C1_Kit_SendBlock(cmd_lm75_init, 2, &bwr);
-	Driver_I2C1.MasterTransmit(I2C_ADR_TEMP_SENSOR, cmd_lm75_init, 2, false);
-	// TODO: wait for transmit to complete
-	delay();
+	//Driver_I2C1.MasterTransmit(I2C_ADR_TEMP_SENSOR, cmd_lm75_init, 2, false);
+	I2C1_DRV_MasterSend(I2C_ADR_TEMP_SENSOR, 0, 0, cmd_lm75_init, 2);
+
 
 	while (1) {
 		// Cteni teploty
@@ -88,12 +91,13 @@ int main(void)
 		//status = I2C1_Kit_SendChar(LM75_REG_TEMP);
 		dataSend[0] = LM75_REG_TEMP;
 		sendSize = 1;
-		Driver_I2C1.MasterTransmit(I2C_ADR_TEMP_SENSOR, dataSend, sendSize, false);
-		// TODO: wait for transmit to complete
-		delay();
+		//Driver_I2C1.MasterTransmit(I2C_ADR_TEMP_SENSOR, dataSend, sendSize, false);
 
 		//I2C1_Kit_RecvBlock(buffer,2,&brd);
-		Driver_I2C1.MasterReceive(I2C_ADR_TEMP_SENSOR, dataReceive, 2, false);
+		//Driver_I2C1.MasterReceive(I2C_ADR_TEMP_SENSOR, dataReceive, 2, false);
+		// POZOR: masterReceive je funkce, ktera odesle zadany command a pak prijme odpoved,
+		//
+		I2C1_DRV_MasterReceive(I2C_ADR_TEMP_SENSOR, dataSend, sendSize,dataReceive, 2);
 		temperature = (256 * dataReceive[0] + dataReceive[1]) >> 5;
 		// prepocet na st.C
 		temperature = (temperature * 1270) / 0x3f8;

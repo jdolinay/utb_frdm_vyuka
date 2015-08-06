@@ -42,6 +42,21 @@ extern ARM_DRIVER_I2C Driver_I2C1;
 #endif
 #endif
 
+// todo: jen pro testy:
+bool I2C1_DRV_MasterReceive(	uint32_t slaveAddress,
+                                          const uint8_t * cmdBuff,
+                                          uint32_t cmdSize,
+                                          uint8_t * rxBuff,
+                                          uint32_t rxSize
+                                         );
+
+bool I2C1_DRV_MasterSend(uint32_t slaveAddress,
+                                       const uint8_t * cmdBuff,
+                                       uint32_t cmdSize,
+                                       const uint8_t * txBuff,
+                                       uint32_t txSize
+                                       );
+
 /* Clock Control Unit register */
 /* jd: not used
 #define CCU_CLK_CFG_RUN     (1 << 0)

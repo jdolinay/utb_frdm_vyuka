@@ -47,6 +47,17 @@
  stavu je komplikovane, spis se drzet KSDK :)
  slave handler zatim neimplementuju.
  TODO: jak resit vyslani prikazu a prijem dat asynchronne, nebyly by lepsi blokujici funkce?
+ 5.8.2015 pokus s funkcemi z KSDK jako I2C_DRV_MasterSendDataBlocking,
+ POZOR: Nejde tak snadno pouzit :(
+ On totiz blocking rezim KSDK stejne vyuziva preruseni pro prijem a jen ceka na semafor, ktery
+ se pres nej nejak nastavuje asi jak prijme pocet znaku...
+
+ Pokracuj: i kdyz jsem upravil na blocking rezim, nefunguje, zustane vyset pri
+ cekani na transf. complete flag pri receive, protoze ten funguje az po ACK/NACK ale to pri
+ prijmu musim generovat ja.. > nevim na co cekat pri prijmu dat... asi to bez interruptu
+ nejde? ale ani int flag neni generovat pokud neni ack...
+ Mozna jednodussi rozchodit existujici reseni, overit, ze spravnce vysila
+ repeasted start atd.
  * */
 
 #include <string.h>
@@ -78,7 +89,8 @@
 
 /**
   \fn          uint32_t GetClockFreq (uint32_t clk_src)
-  \brief       Return the clock for I2C; which is always bus clock on KL25Z4.
+  \brief       Return the clock for I2C; in manual it is always bus clock on KL25Z4.
+  BUT  in KSDK it is bus clock for I2C0 and system clock (core) for I2C1! see CLOCK_SYS_GetI2cFreq.
   \note  TODO: This could be moved to general file, e.g. clock_mkl25z4.h
    We rely on values of bus clock defined in system_MKL24Z4.h file. Hope it will not change.
 */
@@ -88,6 +100,7 @@ static uint32_t GetClockFreq (uint32_t clk_src)
 #if (CLOCK_SETUP == 0)
 	clk = 20971520u;
 #elif (CLOCK_SETUP == 1)
+	// TODO: foa any other clock than default (0) the I2C1 and I2C0 have different clock? see above.
 	clk = 24000000;	// 24 MHz
 #elif (CLOCK_SETUP == 2)
 	clk = 800000;	// 0.8 MHz
@@ -117,6 +130,440 @@ static void CompleteTransfer(I2C_RESOURCES *i2c)
 	/* Generate stop signal. */
 	I2C_HAL_SendStop(base);
 }
+
+#if 0
+/*FUNCTION**********************************************************************
+ *
+ * Function Name : I2C_DRV_MasterSetBaudRate
+ * Description   : configures the I2C bus to access a device.
+ * This function will set baud rate.
+ *
+ *END**************************************************************************/
+void I2C_DRV_MasterSetBaudRate(I2C_RESOURCES *i2c, uint32_t instance, const i2c_device_t * device)
+{
+    //assert(device);
+    //assert(instance < I2C_INSTANCE_COUNT);
+
+    I2C_Type * base = i2c->reg;	//g_i2cBase[instance];
+    uint32_t i2cClockFreq;
+
+    /* Get current runtime structure. */
+    //i2c_master_state_t * master = (i2c_master_state_t *)g_i2cStatePtr[instance];
+
+    /* Set baud rate if different.*/
+    //if (device->baudRate_kbps != master->lastBaudRate_kbps)
+    //{
+        /* Get the current bus clock.*/
+        i2cClockFreq = CLOCK_SYS_GetI2cFreq(instance);
+        I2C_HAL_SetBaudRate(base, i2cClockFreq, device->baudRate_kbps, NULL);
+
+        /* Record baud rate change */
+       // master->lastBaudRate_kbps = device->baudRate_kbps;
+    //}
+}
+#endif
+
+/*FUNCTION**********************************************************************
+ *
+ * Function Name : I2C_DRV_MasterWait
+ * Description   : Wait transfer to finish.
+ * This function is a static function which will be called by other data
+ * transaction APIs.
+ *
+ *END**************************************************************************/
+static i2c_status_t I2C_DRV_MasterWait(I2C_RESOURCES *i2c, /*uint32_t instance,*/ uint32_t timeout_ms)
+{
+	// jd: nemam zadne funkce os...
+	// zkusim cekat na TCF flag (transfer complete)
+	while ( (i2c->reg->S & I2C_S_TCF_MASK) == 0 )
+		;	// transfer in progress
+
+#if 0
+    assert(instance < I2C_INSTANCE_COUNT);
+
+    i2c_master_state_t * master = (i2c_master_state_t *)g_i2cStatePtr[instance];
+    //osa_status_t syncStatus;
+
+    do
+    {
+        syncStatus = OSA_SemaWait(&master->irqSync, timeout_ms);
+    }while(syncStatus == kStatus_OSA_Idle);
+
+    if (syncStatus != kStatus_OSA_Success)
+    {
+        master->status = kStatus_I2C_Timeout;
+    }
+
+    return master->status;
+#endif
+}
+
+/*FUNCTION**********************************************************************
+ *
+ * Function Name : I2C_DRV_SendAddress
+ * Description   : Prepare and send out address buffer with interrupt.
+ * This function is a static function which will be called by other data
+ * transaction APIs.
+ *
+ *END**************************************************************************/
+static i2c_status_t I2C_DRV_SendAddress(I2C_RESOURCES *i2c,
+										uint32_t address,
+
+										/*uint32_t instance,
+                                        const i2c_device_t * device,*/
+                                        const uint8_t * cmdBuff,
+                                        uint32_t cmdSize,
+                                        i2c_direction_t direction,
+                                        uint32_t timeout_ms)
+{
+    //assert(instance < I2C_INSTANCE_COUNT);
+
+    I2C_Type * base = i2c->reg;	//g_i2cBase[instance];
+    /* Get current runtime structure. */
+    //i2c_master_state_t * master = (i2c_master_state_t *)g_i2cStatePtr[instance];
+
+    uint8_t addrByte1, addrByte2, directionBit;
+    bool is10bitAddr = false;
+    uint8_t addrBuff[2] = {0};
+    uint8_t addrSize = 0;
+    bool isMainXferBlocking = true;	//master->isBlocking;
+
+    /* Send of address and CMD must be blocking without STOP */
+    //master->isRequesting = true;
+    //master->isBlocking = true;
+
+    /*--------------- Prepare Address Buffer ------------------*/
+    /* Get r/w bit according to required direction.
+     * read is 1, write is 0. */
+    directionBit = (direction == kI2CReceive) ? 0x1U : 0x0U;
+
+    /* Check to see if slave address is 10 bits or not. */
+    //is10bitAddr = ((device->address >> 10U) == 0x1EU) ? true : false;
+
+    /* Get address byte 1 and byte 2 according address bit number. */
+    /*
+    if (is10bitAddr)
+    {
+        addrByte1 = (uint8_t)(device->address >> 8U);
+        addrByte2 = (uint8_t)device->address;
+    }
+    else
+    {
+        addrByte1 = (uint8_t)device->address;
+    }*/
+
+    addrByte1 = (uint8_t)address;
+
+    /* Get the device address with r/w direction. If we have a sub-address,
+      then that is always done as a write transfer prior to transferring
+      the actual data.*/
+    addrByte1 = addrByte1 << 1U;
+
+    /* First need to write if 10-bit address or has cmd buffer. */
+    addrByte1 |= (uint8_t)((is10bitAddr || cmdBuff) ? 0U : directionBit);
+
+    /* Put slave address byte 1 into address buffer. */
+    addrBuff[addrSize++] = addrByte1;
+
+    if (is10bitAddr)
+    {
+        /* Put address byte 2 into address buffer. */
+        addrBuff[addrSize++] = addrByte2;
+    }
+
+    /*--------------- Send Address Buffer ------------------*/
+    //master->txBuff = addrBuff;
+    //master->txSize = addrSize;
+
+    /* Send first byte in address buffer to trigger interrupt.*/
+    I2C_HAL_WriteByte(base, addrBuff[0]);
+
+    /* Wait for the transfer to finish.*/
+    I2C_DRV_MasterWait(i2c, timeout_ms);
+
+    /*--------------------- Send CMD -----------------------*/
+    //if ((master->status == kStatus_I2C_Success) && cmdBuff)
+    if (cmdBuff)
+    {
+    	// JD: pozor: not supported cmdSize > 1 !!!
+
+       // master->txBuff = cmdBuff;
+       // master->txSize = cmdSize;
+
+        /* Send first byte in address buffer to trigger interrupt.*/
+        I2C_HAL_WriteByte(base, *cmdBuff);
+
+        /* Wait for the transfer to finish.*/
+        I2C_DRV_MasterWait(i2c, timeout_ms);
+    }
+
+    /*--------------- Send Address Again ------------------*/
+    /* Send slave address again if receiving data from 10-bit address slave,
+       OR conducting a cmd receive */
+    if (/*(master->status == kStatus_I2C_Success) && */
+    	(direction == kI2CReceive)
+          && (is10bitAddr || cmdBuff))
+    {
+        /* Need to send slave address again. */
+       // master->txSize = 1U;
+       // master->txBuff = NULL;
+
+        /* Need to generate a repeat start before changing to receive. */
+        I2C_HAL_SendStart(base);
+
+        /* Send address byte 1 again. */
+        I2C_HAL_WriteByte(base, (uint8_t)(addrByte1 | 1U));
+
+        /* Wait for the transfer to finish.*/
+        // jd: tady zustane cekat:
+         // I2C_DRV_MasterWait(i2c, timeout_ms);
+    }
+
+   // master->isRequesting = false;
+   // master->isBlocking = isMainXferBlocking ;
+
+    return kStatus_I2C_Success;	//master->status;
+}
+
+
+/*FUNCTION**********************************************************************
+ *
+ * Function Name : I2C_DRV_MasterSend
+ * Description   : Private function to handle blocking/non-blocking send.
+ * This function is a static function which will be called by other data
+ * transaction APIs.
+ *
+ *END**************************************************************************/
+i2c_status_t I2C_DRV_MasterSend(I2C_RESOURCES *i2c,
+										uint32_t slaveAddress,
+									   /*uint32_t instance,
+                                       const i2c_device_t * device,*/
+                                       const uint8_t * cmdBuff,
+                                       uint32_t cmdSize,
+                                       const uint8_t * txBuff,
+                                       uint32_t txSize,
+                                       uint32_t timeout_ms,
+                                       bool isBlocking)
+{
+    //assert(instance < I2C_INSTANCE_COUNT);
+    //assert(txBuff);
+
+	uint32_t sentCount;
+    I2C_Type * base = i2c->reg; //g_i2cBase[instance];
+   //i2c_master_state_t * master = (i2c_master_state_t *)g_i2cStatePtr[instance];
+
+    /* Return if current instance is used */
+    // TODO:
+    /*
+    if (!master->i2cIdle)
+    {
+        return master->status = kStatus_I2C_Busy;
+    }*/
+
+    /* Need to assign a pre-defined timeout value for sending address and cmd */
+    /*if (!isBlocking)
+    {
+        timeout_ms = I2C_TIMEOUT_MS;
+    }
+
+    master->txBuff = NULL;
+    master->txSize = 0;
+    master->rxBuff = NULL;
+    master->rxBuff = 0;
+    master->status = kStatus_I2C_Success;
+    master->i2cIdle = false;
+    master->isBlocking = isBlocking;
+    */
+
+    // neni potreba
+    //I2C_DRV_MasterSetBaudRate(instance, device);
+
+    /* Set direction to send for sending of address and data. */
+    I2C_HAL_SetDirMode(base, kI2CSend);
+
+    /* Enable i2c interrupt.*/
+    I2C_HAL_ClearInt(base);
+    I2C_HAL_SetIntCmd(base, true);
+
+    /* Generate start signal. */
+    I2C_HAL_SendStart(base);
+
+    /* Send out slave address. */
+    I2C_DRV_SendAddress(i2c, slaveAddress, /*instance, device,*/ cmdBuff, cmdSize, kI2CSend, timeout_ms);
+
+    /* Send out data in transmit buffer. */
+    //if (master->status == kStatus_I2C_Success)
+    {
+        /* Fill tx buffer and size to run-time structure. */
+       // master->txBuff = txBuff;
+       // master->txSize = txSize;
+
+        /* Send first byte in transmit buffer to trigger interrupt.*/
+    	// jd: no interrupts
+        //I2C_HAL_WriteByte(base, txBuff[0]);
+
+        //if (isBlocking)
+        {
+        	sentCount = 0;
+        	while ( sentCount < txSize )
+        	{
+        		I2C_HAL_WriteByte(base, txBuff[sentCount]);
+        		I2C_DRV_MasterWait(i2c, timeout_ms);
+        		sentCount++;
+        	}
+        }
+    }
+#if 0
+    else if (master->status == kStatus_I2C_Timeout)
+    {
+        /* Disable interrupt. */
+        I2C_HAL_SetIntCmd(base, false);
+
+        if (I2C_HAL_GetStatusFlag(base, kI2CBusBusy))
+        {
+            /* Generate stop signal. */
+            I2C_HAL_SendStop(base);
+        }
+
+        /* Indicate I2C bus is idle. */
+        //master->i2cIdle = true;
+    }
+#endif
+
+    return kStatus_I2C_Success;	//master->status;
+}
+
+
+/*FUNCTION**********************************************************************
+ *
+ * Function Name : I2C_DRV_MasterReceive
+ * Description   : Private function to handle blocking/non-blocking receive.
+ * This function is a static function which will be called by other data
+ * transaction APIs.
+ *
+ *END**************************************************************************/
+i2c_status_t I2C_DRV_MasterReceive(I2C_RESOURCES *i2c,
+											uint32_t slaveAddress,
+											/*uint32_t instance,
+                                          const i2c_device_t * device,*/
+                                          const uint8_t * cmdBuff,
+                                          uint32_t cmdSize,
+                                          uint8_t * rxBuff,
+                                          uint32_t rxSize,
+                                          uint32_t timeout_ms,
+                                          bool isBlocking)
+{
+   // assert(instance < I2C_INSTANCE_COUNT);
+   // assert(rxBuff);
+	uint8_t remainingBytes = rxSize;
+
+    I2C_Type * base = i2c->reg;	//g_i2cBase[instance];
+    //i2c_master_state_t * master = (i2c_master_state_t *)g_i2cStatePtr[instance];
+
+    /* Return if current instance is used */
+   /* if (!master->i2cIdle)
+    {
+        return master->status = kStatus_I2C_Busy;
+    }*/
+
+    /* Need to assign a pre-defined timeout value for sending address and cmd */
+   /* if (!isBlocking)
+    {
+        timeout_ms = I2C_TIMEOUT_MS;
+    }
+
+    master->rxBuff = rxBuff;
+    master->rxSize = rxSize;
+    master->txBuff = NULL;
+    master->txSize = 0;
+    master->status = kStatus_I2C_Success;
+    master->i2cIdle = false;
+    master->isBlocking = isBlocking;
+
+    I2C_DRV_MasterSetBaudRate(instance, device);
+    */
+
+    /* Set direction to send for sending of address. */
+    I2C_HAL_SetDirMode(base, kI2CSend);
+
+    /* Enable i2c interrupt.*/
+    I2C_HAL_ClearInt(base);
+    // jd: viz nize, nechci pouzit interrupt:
+    // I2C_HAL_SetIntCmd(base, true);
+
+    /* Generate start signal. */
+    I2C_HAL_SendStart(base);
+
+    /* Send out slave address. */
+    I2C_DRV_SendAddress(i2c, slaveAddress, /*instance, device,*/ cmdBuff, cmdSize, kI2CReceive, timeout_ms);
+
+    /* Start to receive data. */
+    //if (master->status == kStatus_I2C_Success)
+    {
+        /* Change direction to receive. */
+        I2C_HAL_SetDirMode(base, kI2CReceive);
+
+        /* Send NAK if only one byte to read. */
+        if (rxSize == 0x1U)
+        {
+            I2C_HAL_SendNak(base);
+        }
+        else
+        {
+            I2C_HAL_SendAck(base);
+        }
+
+        /* Dummy read to trigger receive of next byte in interrupt. */
+        //I2C_HAL_ReadByte(base);
+
+        if (isBlocking)
+        {
+            /* Wait for the transfer to finish.*/
+            //I2C_DRV_MasterWait(i2c, timeout_ms);
+        	 // JD: toto nejde pouzit, nechci vyuzit interrupt, nemam ho..
+        	I2C_HAL_ReadByte(base);	// toto zahaji cteni
+        	while ( remainingBytes > 0)
+        	{
+        		// TODO: asi zde nemuzu cekat na tranf. complete protoze
+        		// ten bude az vyslu ACK?
+        		  //I2C_DRV_MasterWait(i2c, timeout_ms);	// cekam na 1 bajt
+        		 if (remainingBytes == 1)
+        		 {
+        			 I2C_HAL_SendNak(base);
+        		 }
+        		 else
+        		 {
+        			 I2C_HAL_SendAck(base);
+        		 }
+
+        		// toto zahaji cteni dalsiho byte
+        		*rxBuff++ =	I2C_HAL_ReadByte(base); // i2c->reg->D;
+        		remainingBytes--;
+        	}
+        }
+    }
+#if 0
+    else if (master->status == kStatus_I2C_Timeout)
+    {
+        /* Disable interrupt. */
+        I2C_HAL_SetIntCmd(base, false);
+
+        if (I2C_HAL_GetStatusFlag(base, kI2CBusBusy))
+        {
+            /* Generate stop signal. */
+            I2C_HAL_SendStop(base);
+        }
+
+        /* Indicate I2C bus is idle. */
+        master->i2cIdle = true;
+    }
+#endif
+
+    return  kStatus_I2C_Success;	//master->status;
+}
+
+
+
 
 
 
@@ -165,7 +612,34 @@ static I2C_RESOURCES I2C1_Resources = {
 };
 #endif /* RTE_I2C1 */
 
+// todo: temp
+bool I2C1_DRV_MasterSend(uint32_t slaveAddress,
+                                       const uint8_t * cmdBuff,
+                                       uint32_t cmdSize,
+                                       const uint8_t * txBuff,
+                                       uint32_t txSize)
+{
+	I2C_DRV_MasterSend(&I2C1_Resources, slaveAddress, cmdBuff, cmdSize,
+			txBuff, txSize, 0, true);
 
+	return true;
+}
+
+
+
+bool I2C1_DRV_MasterReceive(uint32_t slaveAddress,
+                                       const uint8_t * cmdBuff,
+                                       uint32_t cmdSize,
+									   uint8_t * rxBuff,
+									   uint32_t rxSize)
+{
+	I2C_DRV_MasterReceive(&I2C1_Resources, slaveAddress, cmdBuff, cmdSize,
+			rxBuff, rxSize, 0, true);
+
+	return true;
+}
+
+// end temp
 /**
   \fn          ARM_DRIVER_VERSION I2C_GetVersion (void)
   \brief       Get driver version.
@@ -296,7 +770,7 @@ static int32_t I2Cx_PowerControl (ARM_POWER_STATE state, I2C_RESOURCES *i2c) {
       //i2c->reg->C1 &= ~(I2C_C1_IICIE_MASK | I2C_C1_MST_MASK | I2C_C1_IICEN_MASK);
       //i2c->reg->C1 |= I2C_C1_TXAK_MASK;		// == clearing I2C_CON_AA in LPC.
       // Nova verze s KSDK HAL:
-      I2C_HAL_Init(i2c->reg);
+      //I2C_HAL_Init(i2c->reg);
       I2C_HAL_Disable(i2c->reg);
 
       /* Disable I2C peripheral clock */
@@ -315,11 +789,9 @@ static int32_t I2Cx_PowerControl (ARM_POWER_STATE state, I2C_RESOURCES *i2c) {
         break;
       }
 
-      // jd: TODO: nothing needed?
       /* Connect base clock */
       // *i2c->base_clk_reg = (1    << 11) |   /* Autoblock En               */
       //                     (0x09 << 24) ;   /* PLL1 is APB  clock source  */
-
       /* Enable I2C peripheral clock */
       //*i2c->pclk_cfg_reg = CCU_CLK_CFG_AUTO | CCU_CLK_CFG_RUN;
       //while (!((*i2c->pclk_stat_reg) & CCU_CLK_STAT_RUN));
@@ -331,6 +803,8 @@ static int32_t I2Cx_PowerControl (ARM_POWER_STATE state, I2C_RESOURCES *i2c) {
     	  SIM->SCGC4 |= SIM_SCGC4_I2C1_MASK;
       }
       // jd: TODO: wait for clock running?
+
+
 
       /* Reset I2C peripheral */
       /*jd: not available on KL25
@@ -345,7 +819,7 @@ static int32_t I2Cx_PowerControl (ARM_POWER_STATE state, I2C_RESOURCES *i2c) {
       //i2c->reg->C1 |= I2C_C1_TXAK_MASK;		// == clearing I2C_CON_AA in LPC.
       //i2c->reg->C1 |= I2C_C1_IICEN_MASK;	// enable I2C module
       // KSDK version:
-      I2C_HAL_Enable(i2c->reg);
+      I2C_HAL_Init(i2c->reg);
 
       i2c->ctrl->stalled = 0;
       //i2c->ctrl->con_aa  = 0;
@@ -353,6 +827,8 @@ static int32_t I2Cx_PowerControl (ARM_POWER_STATE state, I2C_RESOURCES *i2c) {
       /* Enable I2C interrupts */
       NVIC_ClearPendingIRQ (i2c->i2c_ev_irq);
       NVIC_EnableIRQ (i2c->i2c_ev_irq);
+
+      I2C_HAL_Enable(i2c->reg);
       I2C_HAL_SetIntCmd(i2c->reg, true);	/* jd: enable interrupts in i2c module*/
 
       i2c->ctrl->flags |= I2C_FLAG_POWER;
