@@ -145,7 +145,7 @@ typedef struct {
   // jd: volatile uint32_t    *base_clk_reg;       // Base clock register
   volatile uint32_t    *pclk_cfg_reg;       // Peripheral clock config register
   //jd: const volatile uint32_t *pclk_stat_reg;   // Peripheral clock status register
-  uint32_t              rgu_val;            // Peripheral reset value
+  //jd: uint32_t              rgu_val;            // Peripheral reset value
   I2C_CTRL             *ctrl;               // Run-Time control information
 } const I2C_RESOURCES;
 

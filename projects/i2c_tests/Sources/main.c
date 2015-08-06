@@ -66,7 +66,7 @@ int main(void)
 	uint8_t dataSend[4] = { 0 };	// data to send
 	uint8_t sendSize = 0;		// number of bytes to send
 	uint8_t dataReceive[8];
-	uint32_t temperature;
+	uint32_t temperature, humidity;
 	ARM_I2C_STATUS status;
 
 	// TODO: enable clock for ports used by I2C - should be in driver?
@@ -78,12 +78,13 @@ int main(void)
 	Driver_I2C1.PowerControl(ARM_POWER_FULL);
 	Driver_I2C1.Control(ARM_I2C_BUS_SPEED, ARM_I2C_BUS_SPEED_STANDARD);
 
-	// POZOR: Funkce MasterTransmit nemusi resit smer R/W, ten je vzdy 0,
-	// masterReceive posila s r/w nastaveno na R tj. do adresy prida 0
-	/* Note:  r/w - read is 1, write is 0. */
 
-	//MeasureHumidity();
-	MeasureTemperature();
+	while(1)
+	{
+		humidity = MeasureHumidity();
+		temperature = MeasureTemperature();
+		delay();
+	}
 
     /* This for loop should be replaced. By default this loop allows a single stepping. */
     for (;;) {
@@ -148,7 +149,10 @@ uint32_t MeasureHumidity(void)
 
 		// Vypocet vlhkosti
 		humidity = ((int) humidity * 100) / 16383;
+		return humidity;
 	}
+
+
 
 }
 
@@ -194,13 +198,14 @@ uint32_t MeasureTemperature(void)
 
 		temperature = (256 * dataReceive[0] + dataReceive[1]) >> 5;
 		temperature = (temperature * 1270) / 0x3f8;		// prepocet na st.C
+		return temperature;
 	}
 #endif
 
 
 #if 0
 	//
-	// Varianta b) - cteni teploty with preset pointer
+	// Varianta b) - cteni teploty with preset pointer - funguje taky
 	// tj. posilam prikaz precti posledni registr (a to je registr teploty, pokud
 	// jsem na nej predtim nastavil pointer:
 	// Stav:
@@ -211,7 +216,7 @@ uint32_t MeasureTemperature(void)
 	status = Driver_I2C1.GetStatus();
 	while (status.busy)
 		status = Driver_I2C1.GetStatus();
-	while(1)
+	while(0)
 	{
 		Driver_I2C1.MasterReceive(I2C_ADR_TEMP_SENSOR, dataReceive, 2, false);
 		status = Driver_I2C1.GetStatus();
@@ -220,8 +225,10 @@ uint32_t MeasureTemperature(void)
 
 		temperature = (256 * dataReceive[0] + dataReceive[1]) >> 5;
 		temperature = (temperature * 1270) / 0x3f8;		// prepocet na st.C
+		return temperature;
 	}
 #endif
+
 
 
 }
