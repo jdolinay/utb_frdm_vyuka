@@ -62,6 +62,7 @@ extern "C" {
  * @note Valid for  CLOCK_SETUP = 1 or 4 in system_MKL25Z4.c (CMSIS);
   the UART0 must be clocked from OSCERCLK, because
   PLLFLLCLK is disabled; the UART0 clock is 8 MHz (external crystal)
+  TODO: names of enum values should start with UART_
   */
 typedef enum _uart0_baudrates
  {
