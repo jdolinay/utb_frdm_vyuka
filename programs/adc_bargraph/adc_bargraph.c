@@ -3,14 +3,21 @@
  * Analogove-Digitalni prevodnik.
  * Program ukazuje ziskani hodnoty z A/D prevodniku.
  * Napeti na vstupu A/D prevodniku se nastavuje potenciometrem na kitu.
- * Podle velikosti napeti se rozsviti 0 az 4 LED na kitu.
+ * Podle velikosti napeti se rozsviti 0 az 3 LED na kitu.
+ * LED tak predstavuji sloupcovy indikator (bar graph) napeti na vstupu
+ * A/D prevodniku, ktere je nastaveno potenciometrem.
  *
  * Uzitecne informace:
+ * Potenciometr je na pinu PTC2 (coz je kanal 11 A/D prevodniku)
  *
+ * Hodinova frekvence A/D prevodniku musi byt 2 - 12 MHz pri rozliseni 16 bit.
+ * Pri rozliseni <= 13 bit 1 - 18 MHz.
+ * Pro kalibraci je doporuceno <= 4 MHz.
  *
  */
 
 #include "MKL25Z4.h"
+#include "drv_gpio.h"
 
 void delay(void);
 void ADCInit(void);
@@ -18,10 +25,78 @@ uint32_t ADCCalibrate(void);
 
 int main(void)
 {
-	// TODO: vyuzit asi driver GPIO pro LED
+
+	// Pro praci s LED vyuzijeme ovladac GPIO
+	gpio_initialize();
+
+	// Piny pro LED jako vystupy
+	pinMode(LD1, OUTPUT);
+	pinMode(LD2, OUTPUT);
+	pinMode(LD3, OUTPUT);
+
+	// Zhasnuti LED zapisem log. 1
+	pinWrite(LD1, HIGH);
+	pinWrite(LD2, HIGH);
+	pinWrite(LD3, HIGH);
+
 
 	// Inicializace A/D prevodniku
 	ADCInit();
+
+	// Kalibrace a nova inicializace
+	// Pro dosazeni udavane presnosti musi byt prevodnik kalibrovan po
+	// kazdem resetu.
+	// Nova inicializace je potreba protoze pri kalibraci
+	// je prevodnik prenastaven.
+	ADCCalibrate();
+	ADCInit();
+
+	// Nastaveni pinu, kde je pripojen potenciometr,
+	// do rezimu vstupu pro A/D prevodnik: pin PTC2, funkce ALT0
+	// 1. Povolime hodinovy signal pro port C
+	SIM->SCGC5 |= SIM_SCGC5_PORTC_MASK;
+	// 2. NAstavime funkci pinu na ALT0 = vstup A/D prevodniku
+	PORTC->PCR[2] = PORT_PCR_MUX(0);
+
+
+	while (1) {
+
+		// Spusteni prevodu na kanalu 11.
+		// Protoze ostatni nastaveni v registru SC1 mame na 0, muzeme si dovolit
+		// primo v nem prepsat hodnotu cislem kanalu. Lepsi reseni by bylo
+		// "namaskovat" cislo kanalu bez zmeny hodnoty registru.
+		ADC0->SC1[0] = ADC_SC1_ADCH(11);
+
+		// Cekame na dokonceni prevodu
+		while ( (ADC0->SC1[0] & ADC_SC1_COCO_MASK) == 0 )
+			;
+
+		// Ulozime vysledek prevodu
+		uint16_t vysledek = ADC0->R[0];
+
+		// Zhasneme vsechny LED
+		pinWrite(LD1, HIGH);
+		pinWrite(LD2, HIGH);
+		pinWrite(LD3, HIGH);
+
+		// Vyhodnotime vysledek: pri 10 bitovem prevodu je v rozsahu 0 - 1023
+		if (vysledek > 255) {
+			// Rozsvit LED1
+			pinWrite(LD1, LOW);
+		}
+
+		if (vysledek > 510) {
+			// Rozsvit LED2
+			pinWrite(LD2, LOW);
+		}
+
+		if (vysledek > 765) {
+			// Rozsvit LED3
+			pinWrite(LD3, LOW);
+		}
+
+		delay();
+	}	// while
 
 
 
@@ -29,41 +104,47 @@ int main(void)
     return 0;
 }
 
-// Inicializuje A/D prevodnik na....
+/*	ADCInit
+    Inicializuje A/D prevodnik
+    Nastavuje zdroj hodin na bus clock a delicku na 8,
+    rozliseni na 10 bit, ...
+*/
 void ADCInit(void)
 {
 	// Povolit hodinovy signal pro ADC
 	SIM->SCGC6 |= SIM_SCGC6_ADC0_MASK;
 
-
-	/* Note1: The SC1 and result registers may have multiple instances (A and B in case of KL25).
-	 in the CMSIS definitions there is an array for these registers. We use A, i.e. SC1[0] */
-	/* Note 2: Write to SC1A starts a conversion if the channel bit field is not all 1s.
-	 * Write to SC1B does not start conversion (it must be hw triggered, not sw triggered)*/
-
-	// Zakazeme preruseni, nastavime kanal 31 = A/D prevodnik vypnut, select single-ended mode */
-	ADC0->SC1[0] =  ADC_SC1_ADCH(AIN_ADC_DISALED);
+	// Zakazeme preruseni, nastavime kanal 31 = A/D prevodnik vypnut, jinak by zapisem
+	// doslo ke spusteni prevodu
+	// Vybereme single-ended mode
+	ADC0->SC1[0] =  ADC_SC1_ADCH(31);
 
 	// Vyber hodinoveho signalu, preddelicky a rozliseni
-	ADC0->CFG1 = ADC_CFG1_ADICLK(WMSF_ADC_CLOCK)
-		| ADC_CFG1_ADIV(WMSF_ADC_PRESCALER)
-		| ADC_CFG1_MODE(WMSF_ADC_RESOLUTION);
+	// Clock pro ADC nastavime <= 4 MHz, coz je doporuceno pro kalibraci.
+	// Pri max. CPU frekvenci 48 MHz je bus clock 24 MHz, pri delicce = 8
+	// bude clock pro ADC 3 MHz
+	ADC0->CFG1 = ADC_CFG1_ADICLK(0)		/* ADICLK = 0 -> bus clock */
+		| ADC_CFG1_ADIV(3)				/* ADIV = 3 -> clock/8 */
+		| ADC_CFG1_MODE(2);				/* MODE = 2 -> rozliseni 10-bit */
 
-	/* ADC A or B, long sample time selection */
-	ADC0->CFG2 = 0;	/* default values: ADxxa selected, longest sample time 24 ADCK total */
+	// Do ostatnich registru zapiseme vychozi hodnoty:
+	// Vybereme sadu kanalu "a", vychozi nejdelsi cas prevodu (24 clocks)
+	ADC0->CFG2 = 0;
 
-	/* Select reference, triggering, compare mode */
-	ADC0->SC2 = 0;	/* default values: sw trigger, default reference=VREFH,VREFL pins, ... */
+	// Softwarove spousteni prevodu, vychozi reference
+	ADC0->SC2 = 0;
 
+	// Hardwarove prumerovani vypnuto
 	ADC0->SC3 = 0;	/* default values, no averaging */
-
-	// TODO: zde procest i kalibraci? spis ne viz musi se pak znova volat init...
 
 }
 
-/* Kalibrace ADC
- * Kod prevzat z ukazkoveho kodu pro FRDM-KL25Z.
- * Pri chybe kalibrace vraci 1, pri uspechu vraci 0 */
+/*
+  ADCCalibrate
+  Kalibrace ADC.
+  Kod prevzat z ukazkoveho kodu pro FRDM-KL25Z.
+  Pri chybe kalibrace vraci 1, pri uspechu vraci 0
+*/
 uint32_t ADCCalibrate(void)
 {
 	 unsigned short cal_var;
@@ -71,54 +152,45 @@ uint32_t ADCCalibrate(void)
 	  ADC0->SC2 &= ~ADC_SC2_ADTRG_MASK;	/* Enable Software Conversion Trigger for Calibration Process */
 	  ADC0->SC3 &= ( ~ADC_SC3_ADCO_MASK & ~ADC_SC3_AVGS_MASK );    /* set single conversion, clear avgs bitfield for next writing */
 
-	  ADC0->SC3 |= ( ADC_SC3_AVGE_MASK | ADC_SC3_AVGS(AVGS_32) ); /* turn averaging ON and set desired value */
-	  //ADC_SC3_REG(adcmap) |= ( ADC_SC3_AVGE_MASK | ADC_SC3_AVGS(AVGS_32) );
+	  ADC0->SC3 |= ( ADC_SC3_AVGE_MASK | ADC_SC3_AVGS(32) ); /* turn averaging ON and set desired value */
 
 	  ADC0->SC3 |= ADC_SC3_CAL_MASK;      /* Start CAL */
-	  //ADC_SC3_REG(adcmap) |= ADC_SC3_CAL_MASK ;      // Start CAL
 
-	  while ( !WMSF_ADCA_COMPLETE(adc->reg) )
-		  ; /* Wait calibration end */
-	  //while ( (ADC_SC1_REG(adcmap,A) & ADC_SC1_COCO_MASK ) == COCO_NOT ); // Wait calibration end
+	  /* Wait calibration end */
+	  while ( (ADC0->SC1[0] & ADC_SC1_COCO_MASK) == 0 )
+		  ;
 
+	  /* Check for Calibration fail error and return */
 	  if ( (ADC0->SC3 & ADC_SC3_CALF_MASK) != 0 )
 		  return 1;
-	  /*if ((ADC_SC3_REG(adcmap)& ADC_SC3_CALF_MASK) == CALF_FAIL )
-	  {
-	   return(1);    // Check for Calibration fail error and return
-	  }*/
 
 	  // Calculate plus-side calibration
 	  cal_var = 0;
-	  cal_var =  adc->reg->CLP0;	//ADC_CLP0_REG(adcmap);
-	  cal_var += adc->reg->CLP1;	// ADC_CLP1_REG(adcmap);
-	  cal_var += adc->reg->CLP2;	//ADC_CLP2_REG(adcmap);
-	  cal_var += adc->reg->CLP3;	//ADC_CLP3_REG(adcmap);
-	  cal_var += adc->reg->CLP4;	//ADC_CLP4_REG(adcmap);
-	  cal_var += adc->reg->CLPS;	// ADC_CLPS_REG(adcmap);
+	  cal_var =  ADC0->CLP0;
+	  cal_var += ADC0->CLP1;
+	  cal_var += ADC0->CLP2;
+	  cal_var += ADC0->CLP3;
+	  cal_var += ADC0->CLP4;
+	  cal_var += ADC0->CLPS;
 
 	  cal_var = cal_var/2;
 	  cal_var |= 0x8000; // Set MSB
 	  ADC0->PG = ADC_PG_PG(cal_var);
-	  //ADC_PG_REG(adcmap) = ADC_PG_PG(cal_var);
-
 
 	  // Calculate minus-side calibration
 	  cal_var = 0;
-	  cal_var =  ADC0->CLM0;	//ADC_CLM0_REG(adcmap);
-	  cal_var += ADC0->CLM1;	//ADC_CLM1_REG(adcmap);
-	  cal_var += ADC0->CLM2;	//ADC_CLM2_REG(adcmap);
-	  cal_var += ADC0->CLM3;	//ADC_CLM3_REG(adcmap);
-	  cal_var += ADC0->CLM4;	//ADC_CLM4_REG(adcmap);
-	  cal_var += ADC0->CLMS;	//ADC_CLMS_REG(adcmap);
+	  cal_var =  ADC0->CLM0;
+	  cal_var += ADC0->CLM1;
+	  cal_var += ADC0->CLM2;
+	  cal_var += ADC0->CLM3;
+	  cal_var += ADC0->CLM4;
+	  cal_var += ADC0->CLMS;
 
 	  cal_var = cal_var/2;
 	  cal_var |= 0x8000; // Set MSB
 	  ADC0->MG = ADC_MG_MG(cal_var);
-	  //ADC_MG_REG(adcmap) = ADC_MG_MG(cal_var);
 
-	  ADC0->SC3 &= ~ADC_SC3_CAL_MASK ;
-	  //ADC_SC3_REG(adcmap) &= ~ADC_SC3_CAL_MASK ; /* Clear CAL bit */
+	  ADC0->SC3 &= ~ADC_SC3_CAL_MASK;
 
 	  return 0;
 }
@@ -126,7 +198,7 @@ uint32_t ADCCalibrate(void)
 // Kratke cekani
 void delay(void)
 {
-	uint32_t n = 700000;
+	uint32_t n = 100000;
 	while( n -- )
 		;
 }

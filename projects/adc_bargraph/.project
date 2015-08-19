@@ -30,5 +30,15 @@
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/programs/adc_bargraph/adc_bargraph.c</locationURI>
 		</link>
+		<link>
+			<name>Sources/drv_gpio.c</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/drivers/gpio/drv_gpio.c</locationURI>
+		</link>
+		<link>
+			<name>Sources/drv_gpio.h</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/drivers/gpio/drv_gpio.h</locationURI>
+		</link>
 	</linkedResources>
 </projectDescription>
