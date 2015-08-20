@@ -1,8 +1,9 @@
 /*
  * Ukazkovy program pro Programovani mikropocitacu
  * Casovac TPM, cekani s presne danou delkou (polling).
- * Program ukazuje blikani LED s vyuzitim funkce delay, ktera pouziva
+ * Program ukazuje blikani LED s vyuzitim cekaci funkce, ktera pouziva
  * casovac TPM0 k odmereni casu.
+ * LED blika: 1 s sviti a 1s nesviti.
  *
  * POZOR: v nastaveni projektu > compiler > preprocesor musi byt CLOCK_SETUP=1
  * aby byl CPU clock 48 MHz!
@@ -27,7 +28,6 @@ int main(void)
 	gpio_initialize();
 	pinMode(LD1, OUTPUT);
 	pinWrite(LD1, HIGH);
-
 
 	// Blikani LED
 	while(1) {
