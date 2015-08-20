@@ -18,6 +18,8 @@
 
 int main(void)
 {
+	uint32_t counter;
+
 	// Pro ovladani LED pouzijeme ovladac GPIO
 	gpio_initialize();
 	pinMode(LD1, OUTPUT);
@@ -78,8 +80,18 @@ int main(void)
 
 	// Nic dalsiho se v hlavni smycce programu nedeje, vse resi obsluha preruseni
 	while(1)
-		;
+	{
+		counter++;
+	}
 
+	/*
+	 TIP: zamyslete se nad hodnotou "counter" pokud bychom misto preruseni
+	 pro blikani pouzili takovyto kod uvnitr while:
+	  rozsvit led
+	  cekej
+	  zhasni led
+	  cekej
+	*/
 
     /* Never leave main */
     return 0;
