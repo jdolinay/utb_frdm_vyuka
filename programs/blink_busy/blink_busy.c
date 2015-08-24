@@ -1,6 +1,6 @@
 /*
  * Ukazkovy program pro Programovani mikropocitacu
- * Blikani LED.
+ * Blikani LED s vyuzitim registru - program pracuje primo s registry.
  *
  * Mame k dispozici tyto LED:
  * LED primo na FRDM-KL25Z:
@@ -31,11 +31,6 @@
   	  ktera verze se pouzije.
 
  *
-
-  tip: podle miry porozumneni jde udelat efektivnejsi kod, kdyz beru jako
- * samostatne objekty, vymyslim max. kod if (0 ) pouzij port A, else if (1) pouzij portB.
- * ale kdyz vim ze jsou to adresy v pameti, muzu udelat makro, ktere podle daneho cisla portu
- * vypocte "base" adresu pro jeho objekt.
  */
 
 #include "MKL25Z4.h"

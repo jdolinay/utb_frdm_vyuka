@@ -1,6 +1,8 @@
 /*
  * Ukazkovy program pro Programovani mikropocitacu
- * Ovladani LED pomoci tlacitek.
+ * Ovladani LED pomoci tlacitek pomoci prace s registry MCU.
+ * Program pri stisku tlacitka SW1 zaple LED,
+ * pri stisku SW2 vypne LED.
  *
  *
  * Mame k dispozici 4 tlacitka SW1 az SW4:
