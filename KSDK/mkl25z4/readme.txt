@@ -5,4 +5,4 @@ NOTE: in projects use only:
  MKL25Z4_extension.h
  MKL25Z4_features.h
 
-The <device>.h file is already included by new project wizard in the project.
+The MKL25Z4.h file (<device>.h file) is already included by new project wizard in the project.

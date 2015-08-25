@@ -1,26 +1,30 @@
-16.7.2015
+utb_frdm_vyuka
+Sada programù pro výuku s kitem FRDM-KL25Z
 
 Usporadani:
 Cilem je usnadneni prohlizeni zdrojovych kodu a jejich exportu pro dokumentaci, pripadne i snazsi podpora vice IDE.
-
+- /CMSIS_Driver - ovladaèe podle ARM CMSIS standardu
+    - Config - konfiguraèní soubor ovladaèù CMSIS
 - /doc	    - dokumentace.	
-- /drivers  - ovladaèe periferii, napr. UART, displej.... Kazdy ve vlastni slozce!
-- /FreeRTOS - zdrojovy kod FreeRTOS portu pro KL25Z	
-- /programs - obsahuje jen zdrojove kody ve slozkach podle nazvu programu (ukazky).
+- /drivers  - jednoduché ovladaèe periferii, napr. UART, displej.... Kazdy ve vlastni slozce!
+- /FreeRTOS - zdrojovy kod FreeRTOS portu pro MKL25Z	
+- /KSDK     - soubory pøevzaté z Kinetis SDK, jde o nízkoúrovòové funkce (HAL) využívané v CMSIS ovladaèích.
+- /programs - zdrojove kody ukázkových programl ve slozkach podle nazvu projektu.
 - /projects - obsahuje kompletni projekty IDE (KDS 3.0.0). 
 		Tyto projekty ale obsahuji pouze link na zdrojovy kod v /programs.
-		Nazev hlavniho zdrojoveho kodu (main) v programs je stejny jako nazev projektu!
-		Pokud projekt pouziva ovladace, pak jsou take pouzity jako odkazy na soubory v 
-		/drivers/[nazev driveru]. V Includes cestach pro kompilator musi byt cesta k prislusnemu
-		ovladaci, napr. "../../../drivers/gpio"
+		Nazev hlavniho zdrojoveho kodu (main) v /programs je stejny jako nazev projektu.
+		Pokud projekt pouziva ovladace, pak jsou take pouzity jako odkazy (link) na soubory v 
+		/drivers/[nazev driveru]. 
+        V Includes (cestach) pro kompilator musi byt cesta k prislusnemu vladaci, 
+        napr. "../../../drivers/gpio"
 
 Priklad:
-Projekt blink_busy - ukazka blikani LED s vyuzitim jednoduche cekaci smycky while(n--);
+Projekt blink_busy - ukazka blikani LED s vyuzitim jednoduche cekaci smycky.
 Zdrojovy kod: 	programs/blink_busy/blink_busy.c
 Projekt: 	projects/blink_busy
 
 
-
+Postupy:
 Import projektu do KDS
 Import > Existing projects into workspace 
 Vybrat umisteni utb_frdm_vyuka/projects
