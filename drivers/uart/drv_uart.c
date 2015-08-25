@@ -47,6 +47,9 @@ void uart0_initialize(UART0_baudrate baudrate)
 	/* changes C4 and C5 to default values + sets baudrate preserving the other bits in BDH*/
 	uart0_setbaudrate(baudrate);
 
+	/* Clear Receiver overrun flag, just in case */
+	UART0->S1  |= UART0_S1_OR_MASK;
+
 	/* Enable receiver and transmitter */
 	UART0->C2 |= (UART0_C2_TE_MASK | UART0_C2_RE_MASK );
 
@@ -71,8 +74,18 @@ void uart0_initialize(UART0_baudrate baudrate)
  uint8_t uart0_read(void)
  {
 	 /* Wait until character has been received */
-	 while (!(UART0->S1 & UART0_S1_RDRF_MASK))
-		 ;
+	 while (!(UART0->S1 & UART0_S1_RDRF_MASK)) {
+
+		 /* It may happen that new char arrives before we
+		  * read the old one and overrun flag is set.
+		  * Then clear the flag and return old char; the new char is lost.
+		  */
+		 if ( UART0->S1 & UART0_S1_OR_MASK ) {
+			 UART0->S1  |= UART0_S1_OR_MASK;
+			 break;
+		 }
+
+	 }
 
 	 /* Return the 8-bit data from the receiver */
 	 return UART0->D;
@@ -86,7 +99,7 @@ void uart0_initialize(UART0_baudrate baudrate)
 	 return ((UART0->S1 & UART0_S1_RDRF_MASK) != 0);
  }
 
- /* read one character. return 0 if no character is available */
+ /* read one character. Blocks the caller until a character is available! */
  char uart0_getch(void)
  {
  	return (char)uart0_read();

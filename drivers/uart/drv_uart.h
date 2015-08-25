@@ -101,7 +101,7 @@ void uart0_write(uint8_t data);
   * @brief Read one byte from UART
   * @param
   * @return the byte of data read from UART.
-  * @note  If there are no data, the function blocks untill data are received.
+  * @note  If there are no data, the function blocks until data are received.
   * For non-blocking use, first check if there is anything to read by calling
   * uart0_data_available, then call uart0_read.
   */
