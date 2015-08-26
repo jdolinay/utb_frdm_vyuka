@@ -1,28 +1,74 @@
-23.7.2015
-Oficial FreeRTOS port for KL25Z is not available.
+NOTE: English Version below
+------------------------------
 
+Vytvoreni projektu s FreeRTOS v Kinetis Design Studio (KDS):
+
+- Vytvorit novy projekt pro MKL25Z
+- Pretahnout slozku FreeRTOS ze spravce souboru (Pruzkumnik, Total Commander) na projekt v KDS
+- Pridat do nastaveni C Compileru cesty k temto slozkam:
+ FreeRTOS/include ("${workspace_loc:/${ProjName}/Sources/FreeRTOS/include}")
+ FreeRTOS/port ("${workspace_loc:/${ProjName}/Sources/FreeRTOS/port}")
+ FreeRTOS/src ("${workspace_loc:/${ProjName}/Sources/FreeRTOS/src}")
+(Pri pridavani cesty pouzijte tlacitko Workspace a vyberte prislusnou virtualni slozku v projektu), vysledkem 
+budou tyto cesty:
+ "${workspace_loc:/${ProjName}/Sources/FreeRTOS/include}"
+ "${workspace_loc:/${ProjName}/Sources/FreeRTOS/port}"
+ "${workspace_loc:/${ProjName}/Sources/FreeRTOS/src}"
+
+- Smazat soubor startup_MKL25Z4.s z Project_Settings/Startup_Code v projektu.
+Nebo nastavit pro tento soubor ve vlastnostech "exclude it from build"
+Ve slozce FreeRTOS je upravena verze tohoto souboru, ktera pak bude automaticky pouzita.
+
+
+- Zadat frekvenci CPU a sbernice (bus) v souboru FreeRTOSConfig.h:
+Pokud jste nenastavili v projektu hodnotu CLOCK_SETUP, pak vychozi CPU i BUS clock je 20,9 MHZ:
+   #define configCPU_CLOCK_HZ                        20971530U
+   #define configBUS_CLOCK_HZ                        20971520U
+
+Pokud jste v projektu nastavili CLOCK_SETUP=1, CPU clock je 48 MHz, a BUS clock je 24 MHz
+   #define configCPU_CLOCK_HZ                        48000000U
+   #define configBUS_CLOCK_HZ                        24000000U
+
+
+- Podle potreby upravte dalsi nastaveni ve FreeRTOSConfig.h 
+
+
+-------------------------------------------------------------
+   ENGLISH VERSION
+
+Howto create project in KDS 3 with FreeRTOS
+
+Notes:
+Oficial FreeRTOS port for KL25Z is not available.
 Port from Erich Styger obtained from:
 https://github.com/ErichStyger/mcuoneclipse/tree/master/Examples/FreeRTOS_Ports/CodeWarrior/CW_FreeRTOS_FRDM-KL25Z
 
+
 To make it work in KDS 3.0.0:
-- Create new project for KL25Z MCU.
-- Copy the FreeRTOS folder to Sources in the project.
+- Create new project for MKL25Z MCU.
+- Drag and Drop the /FreeRTOS folder to your project in KDS, select "Link to files and folders" option.
 - Add include paths for C compiler to:
 -- FreeRTOS/include ("${workspace_loc:/${ProjName}/Sources/FreeRTOS/include}")
 -- FreeRTOS/port ("${workspace_loc:/${ProjName}/Sources/FreeRTOS/port}")
 -- FreeRTOS/src ("${workspace_loc:/${ProjName}/Sources/FreeRTOS/src}")
-(Use Workspace button to select the path)
+(Use Workspace... button to select the path to the virtual folders in your project)
 
 - Delete startup_MKL25Z4.s from Project_Settings/Startup_Code in your project (or exclude it from build).
 A version of this file from FreeRTOS directory will be used.
 
 - Specify CPU clock and BUS clock in FreeRTOSConfig.h:
+If you did not set CLOCK_SETUP option, the default CPU clock is 20,9 MHZ:
    #define configCPU_CLOCK_HZ                        20971530U
    #define configBUS_CLOCK_HZ                        20971520U
+If you use CLOCK_SETUP=1, the CPU clock is 48 MHz
+   #define configCPU_CLOCK_HZ                        48000000U
+   #define configBUS_CLOCK_HZ                        24000000U
+
 
 - Update FreeRTOSConfig.h as needed to enable/disable RTOS functionality (see FreeRTOS.org)
 
 
+Notes
 
 Alternative option instead of deleting the startup_MKL25Z4.s file: 
 - Open Project_Settings/Startup_Code/startup_MKL25Z4.s and replace names of interrupt handlers:
@@ -31,6 +77,12 @@ Alternative option instead of deleting the startup_MKL25Z4.s file:
     .long   0                                               /* Reserved*/
     .long   /*PendSV_Handler*/ vPortPendSVHandler           /* PendSV Handler*/
     .long   /*SysTick_Handler*/ vPortTickHandler            /* SysTick Handler*/
+
+The "map" on handler names (KDS name > FreeRTOS name):
+ SVC_Handler 	> vPortSVCHandler
+ PendSV_Handler  > vPortPendSVHandler
+ SysTick_Handler  > vPortTickHandler
+ 
 
 
 

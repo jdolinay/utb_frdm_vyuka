@@ -155,7 +155,7 @@ typedef MCU_pin_type  MCU_pin_t;
 #define		GPIO_PORT_OBJECT(pin)		((PORT_Type *)(PORTA_BASE + (PORTB_BASE-PORTA_BASE)*(pin & 0x00FF)))
 
 /** Obtain number of port from pin code. Port A is 0, port B is 1, etc. */
-#define		GPIO_PORT_NUMBER(pin)		(pin & 0x00FF)
+#define		GPIO_PORT_NUMBER(pin)		(pin & 0x000000FF)
 
 // Macros which allow us to refer to the I/O registers directly
 #define		GPIO_DDR_REG(pin)    	GPIO_GPIO_OBJECT(pin)->PDDR
@@ -202,15 +202,15 @@ static inline uint32_t PINS_PinCodeToPortClockMask(MCU_pin_t PinCode)
 {
 	uint32_t port = GPIO_PORT_NUMBER((uint32_t)PinCode);
 	switch(port) {
-	case 0:
+	case PORT_A:
 		return SIM_SCGC5_PORTA_MASK;
-	case 1:
+	case PORT_B:
 		return SIM_SCGC5_PORTB_MASK;
-	case 2:
+	case PORT_C:
 		return SIM_SCGC5_PORTC_MASK;
-	case 3:
+	case PORT_D:
 		return SIM_SCGC5_PORTD_MASK;
-	case 4:
+	case PORT_E:
 		return SIM_SCGC5_PORTE_MASK;
 	default:
 		return 0;

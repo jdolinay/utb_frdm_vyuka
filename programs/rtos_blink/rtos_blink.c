@@ -2,29 +2,34 @@
  * Ukazkovy program pro Programovani mikropocitacu
  * Operacni system FreeRTOS, periodicke blikani LED
  *
- * POZOR: V souboru FreeRTOS/include/FreeRTOSConfig.h je nutno nastavit konstanty podle hodinove
- * frekvence CPU. Priklad pro vychozi nastaveni projektu v KDS 3.0.0:
- * #define configCPU_CLOCK_HZ                        20971530U
-   #define configBUS_CLOCK_HZ                        20971520U
+ * Jak pridat FreeRTOS do projektu:
+ * 1) V souboru FreeRTOS/include/FreeRTOSConfig.h je nutno nastavit konstanty podle hodinove
+ * frekvence CPU.
  * Tento projekt je nastaven na 48 MHz: V nastaveni projektu > compiler > preprocesor
  * je symbol CLOCK_SETUP=1
  * Popis jednotlivych CLOCK_SETUP hodnot najdete v Includes/system_MKL25Z4.h
+ * Konstanty pro CLOCK_SETUP=1:
+ * #define configCPU_CLOCK_HZ                        48000000U
+ *  #define configBUS_CLOCK_HZ                        24000000U
  *
- * Soubory RTOS pridany pretazenim z file manager na projekt v KDS a volbou
+ * Priklad pro vychozi nastaveni projektu v KDS 3.0.0 (CLOCK_SETUP nedefinovan nebo = 0):
+ * #define configCPU_CLOCK_HZ                        20971530U
+ *  #define configBUS_CLOCK_HZ                        20971520U
+ *
+ *
+ * 2) Soubory RTOS pridany do projektu pretazenim z file manager na projekt v KDS a volbou
  * "Link to files and folders".
  *
- * V souboru Project_Settings/Startup_Code/system_MKL25Z4.s jsou obsluhy preruseni
- * nasmerovany na RTOS pro tyto preruseni:
- * SVC_Handler 		> vPortSVCHandler
- * PendSV_Handler 	> vPortPendSVHandler
- * SysTick_Handler  > vPortTickHandler
+ * 3) Cesty v Compiler > Includes pridany pres tlacitko Workspace pro vyber cesty. Jsou pak
+ * nasledujici:
+ * "${workspace_loc:/${ProjName}/Sources/FreeRTOS/include}"
+ * "${workspace_loc:/${ProjName}/Sources/FreeRTOS/port}"
+ * "${workspace_loc:/${ProjName}/Sources/FreeRTOS/src}"
  *
- * Zde je kus zmeneneho souboru (bez komentaru)
-    .long   vPortSVCHandler		    //SVC_Handler
-    .long   0                       // Reserved
-    .long   0                       // Reserved
-    .long   vPortPendSVHandler      // PendSV_Handler
-    .long   vPortTickHandler        // SysTick_Handler
+ * 4) Smazat startup_MKL25Z4.s z Project_Settings/Startup_Code nebo nastavit
+ * ve vlastnostech tohoto souboru Exclude from build.
+ *
+ * Dalsi informace najdete v /doc/freeRTOS.txt.
  *
  */
 
@@ -48,22 +53,34 @@ static portTASK_FUNCTION(MainTask, pvParameters) {
   {
     // Prepnuti stavu LED
 	RED_LED_TOGGLE();
+
+
 /*
-    // Pozastaveni procesu na dany pocet tiku.
-	// Pro vypocet doby pozastaveni se pouziva makro portTICK_RATE_MS
-	// coz je asi 1/(pocet tiku za milisekundu)
-	// POZOR: vTaskDelay se nedoporucuje ulohy, ktere maji byt spousteni
-	// s presnou periodou, protoze doba pozastaveni je relativni - task je
-	// pozastaven na dany pocet tiku od okamziku volani..
-	// Pro presne periodicke casovani je doporucena vTaskDelayUntil.
-    vTaskDelay(1000/portTICK_RATE_MS);
+    Pozastaveni procesu na dany pocet tiku.
+	Pro vypocet doby pozastaveni v milisekundach se pouziva makro portTICK_RATE_MS
+	coz je asi 1/(pocet tiku za milisekundu)
+	POZOR: vTaskDelay se nedoporucuje ulohy, ktere maji byt spousteny
+	s presnou periodou, protoze doba pozastaveni je relativni - task je
+	pozastaven na dany pocet tiku od okamziku volani.
+	Pro presne periodicke casovani je doporucena vTaskDelayUntil.
   */
+
+	//
+	// 1. varianta kodu: pozastaveni na danou dobu (nepresne)
+	//
+	vTaskDelay(1000/portTICK_RATE_MS);
+
+	//
+	// 2. varianta kodu: zajisteni spousteni kodu v presnych intervalech
+	//
+	/*
     TickType_t xLastWakeTime;
     const TickType_t xFrequency = 500/portTICK_RATE_MS;
 
     // Initialise the xLastWakeTime variable with the current time.
     xLastWakeTime = xTaskGetTickCount();
     vTaskDelayUntil( &xLastWakeTime, xFrequency );
+    */
   }
 }
 
@@ -76,23 +93,27 @@ int main(void)
 	PTB->PDDR |= RED_LED_MASK;				// pin do vystupniho rezimu
 
 	// Vytvoreni procesu Main
-	if (xTaskCreate(
-	        MainTask,  /* pointer to the task */
-	        "Main", /* task name for kernel awareness debugging */
-	        configMINIMAL_STACK_SIZE, /* task stack size */
-	        (void*)NULL, /* optional task startup argument */
-	        tskIDLE_PRIORITY,  /* initial priority */
-	        (xTaskHandle*)NULL /* optional task handle to create */
-	      ) != pdPASS)
-	{
+	BaseType_t status = xTaskCreate(
+	        MainTask,  /* ukazatel na task */
+	        "Main", /* jmeno tasku pro ladeni - kernel awareness debugging */
+	        configMINIMAL_STACK_SIZE, /* velikost zasobniku = task stack size */
+	        (void*)NULL, /* pripadny parametr pro task = optional task startup argument */
+	        tskIDLE_PRIORITY,  /* priorita tasku = initial priority */
+	        (xTaskHandle*)NULL /* pripadne handle na task, pokud ma byt vytvoreno */
+	      );
 
-		while(1)
+	if ( status != pdPASS) {
+
+		while(1) {
 			; /* error! probably out of memory */
+		}
 	}
 
 	vTaskStartScheduler(); /* does not return */
 
-	while(1) ;
+	// Sem bychom se nikdy nemeli dostat
+	while(1)
+		;
 
     /* Never leave main */
     return 0;

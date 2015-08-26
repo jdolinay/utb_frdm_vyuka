@@ -72,7 +72,7 @@ int main(void)
 	// TODO: S timto funguje ok, kod v I2C driveru uz je a mel by
 	// fungovat, ale nefunguje :(
 	// 1. Povolime hodinovy signal pro port E
-	SIM->SCGC5 |= (SIM_SCGC5_PORTE_MASK );
+	SIM->SCGC5 |= (SIM_SCGC5_PORTE_MASK);
 
     // Inicializace a konfigurace ovladace I2C
 	Driver_I2C1.Initialize(i2c0_event);
