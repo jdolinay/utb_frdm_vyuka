@@ -45,7 +45,7 @@ int main(void)
 
 		// poslanim znaku s jde vypis zastavit a znovu spustit
 		// Testujeme, zda je ve vyrovnavaci pameti UART modulu prijaty znak...
-		if ( UART0_data_available() )
+		if ( UART0_Data_Available() )
 		{
 			// a pokud ano, precteme jej
 			c = UART0_getch();

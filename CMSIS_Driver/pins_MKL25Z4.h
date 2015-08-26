@@ -136,6 +136,8 @@ typedef enum __mcu_pin_type {
 
 typedef MCU_pin_type  MCU_pin_t;
 
+
+
 /* -------------- Basic I/O function  ---------------- */
 /** Macro to obtain pin number from pin code */
 #define		GPIO_PIN_NUM(pin)		((uint8_t)((uint16_t)pin >> 8))
@@ -151,6 +153,9 @@ typedef MCU_pin_type  MCU_pin_t;
 /** Obtain the address of the PORT_x structure from pin code. Port number (A=0, etc. is encoded
  * as lowest byte in pin code */
 #define		GPIO_PORT_OBJECT(pin)		((PORT_Type *)(PORTA_BASE + (PORTB_BASE-PORTA_BASE)*(pin & 0x00FF)))
+
+/** Obtain number of port from pin code. Port A is 0, port B is 1, etc. */
+#define		GPIO_PORT_NUMBER(pin)		(pin & 0x00FF)
 
 // Macros which allow us to refer to the I/O registers directly
 #define		GPIO_DDR_REG(pin)    	GPIO_GPIO_OBJECT(pin)->PDDR
@@ -183,9 +188,48 @@ typedef enum __gpio_pin_pulltype{
   \param[in]   pinFunc number of the alt. function to set the pin to
   \return      none
 */
-static inline void PINS_PinConfigure(uint32_t pinCode, uint32_t pinFunc)
+static inline void PINS_PinConfigure(uint32_t PinCode, uint32_t PinFunc)
 {
-	GPIO_PORT_OBJECT(pinCode)->PCR[GPIO_PIN_NUM(pinCode)] = PORT_PCR_MUX(pinFunc);
+	GPIO_PORT_OBJECT(PinCode)->PCR[GPIO_PIN_NUM(PinCode)] = PORT_PCR_MUX(PinFunc);
+}
+
+/**
+  \brief       Get mask for enabling clock in SIM for the port of a given pin
+  \param[in]   PinCode name (code) of the pin as defined in pins_[device].h file.
+  \return      the mask (e.g. SIM_SCGC5_PORTA_MASK) or 0 if pin is not valid.
+*/
+static inline uint32_t PINS_PinCodeToPortClockMask(MCU_pin_t PinCode)
+{
+	uint32_t port = GPIO_PORT_NUMBER((uint32_t)PinCode);
+	switch(port) {
+	case 0:
+		return SIM_SCGC5_PORTA_MASK;
+	case 1:
+		return SIM_SCGC5_PORTB_MASK;
+	case 2:
+		return SIM_SCGC5_PORTC_MASK;
+	case 3:
+		return SIM_SCGC5_PORTD_MASK;
+	case 4:
+		return SIM_SCGC5_PORTE_MASK;
+	default:
+		return 0;
+
+	}
+}
+
+/**
+  \brief       Enable clock for the port of a given pin.
+  \param[in]   PinCode name (code) of the pin as defined in pins_[device].h file.
+  \return      None. Calling this function with invalid pin code does nothing.
+*/
+static inline void PINS_EnablePinPortClock(MCU_pin_t PinCode)
+{
+	// Pin code to port clock mask
+	uint32_t mask = PINS_PinCodeToPortClockMask(PinCode);
+
+	// Enable clock
+	SIM->SCGC5 |= ( mask );
 }
 
 

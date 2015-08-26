@@ -9,10 +9,10 @@
  */
 
 #include "MKL25Z4.h"
-#include "I2C_MKL25Z4.H"	// TODO: asi neinkuludovat primo toto ale pres nejaky RTE_components kde
-// budou definovany extern objekty driveru a prislusne include podle nastaveni jake drivery chci.
+#include "RTE_Device.h"
+//#include "I2C_MKL25Z4.H"	// inkludovano pres RTE_Device.h
 
-extern ARM_DRIVER_I2C Driver_I2C1;
+//extern ARM_DRIVER_I2C Driver_I2C1;
 
 // adresy obvodu na I2C sbernici
 #define I2C_ADR_RTC (0b1010000)

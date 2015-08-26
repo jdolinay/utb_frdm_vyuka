@@ -26,6 +26,51 @@
 	</natures>
 	<linkedResources>
 		<link>
+			<name>KSDK</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>KSDK/MKL25Z4_extension.h</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/KSDK/mkl25z4/MKL25Z4_extension.h</locationURI>
+		</link>
+		<link>
+			<name>KSDK/MKL25Z4_features.h</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/KSDK/mkl25z4/MKL25Z4_features.h</locationURI>
+		</link>
+		<link>
+			<name>KSDK/fsl_bitaccess.h</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/KSDK/mkl25z4/fsl_bitaccess.h</locationURI>
+		</link>
+		<link>
+			<name>KSDK/fsl_device_registers.h</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/KSDK/hal/fsl_device_registers.h</locationURI>
+		</link>
+		<link>
+			<name>KSDK/fsl_i2c_hal.c</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/KSDK/hal/fsl_i2c_hal.c</locationURI>
+		</link>
+		<link>
+			<name>KSDK/fsl_i2c_hal.h</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/KSDK/hal/fsl_i2c_hal.h</locationURI>
+		</link>
+		<link>
+			<name>KSDK/fsl_misc_utilities.c</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/KSDK/hal/fsl_misc_utilities.c</locationURI>
+		</link>
+		<link>
+			<name>KSDK/fsl_misc_utilities.h</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/KSDK/hal/fsl_misc_utilities.h</locationURI>
+		</link>
+		<link>
 			<name>Sources/Driver_Common.h</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/CMSIS_Driver/Driver_Common.h</locationURI>
@@ -46,54 +91,14 @@
 			<locationURI>PARENT-2-PROJECT_LOC/CMSIS_Driver/I2C_MKL25Z4.h</locationURI>
 		</link>
 		<link>
-			<name>Sources/KSDK</name>
-			<type>2</type>
-			<locationURI>virtual:/virtual</locationURI>
-		</link>
-		<link>
 			<name>Sources/RTE_Device.h</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/CMSIS_Driver/Config/RTE_Device.h</locationURI>
 		</link>
 		<link>
-			<name>Sources/KSDK/MKL25Z4_extension.h</name>
+			<name>Sources/pins_MKL25Z4.h</name>
 			<type>1</type>
-			<locationURI>PARENT-2-PROJECT_LOC/KSDK/mkl25z4/MKL25Z4_extension.h</locationURI>
-		</link>
-		<link>
-			<name>Sources/KSDK/MKL25Z4_features.h</name>
-			<type>1</type>
-			<locationURI>PARENT-2-PROJECT_LOC/KSDK/mkl25z4/MKL25Z4_features.h</locationURI>
-		</link>
-		<link>
-			<name>Sources/KSDK/fsl_bitaccess.h</name>
-			<type>1</type>
-			<locationURI>PARENT-2-PROJECT_LOC/KSDK/mkl25z4/fsl_bitaccess.h</locationURI>
-		</link>
-		<link>
-			<name>Sources/KSDK/fsl_device_registers.h</name>
-			<type>1</type>
-			<locationURI>PARENT-2-PROJECT_LOC/KSDK/hal/fsl_device_registers.h</locationURI>
-		</link>
-		<link>
-			<name>Sources/KSDK/fsl_i2c_hal.c</name>
-			<type>1</type>
-			<locationURI>PARENT-2-PROJECT_LOC/KSDK/hal/fsl_i2c_hal.c</locationURI>
-		</link>
-		<link>
-			<name>Sources/KSDK/fsl_i2c_hal.h</name>
-			<type>1</type>
-			<locationURI>PARENT-2-PROJECT_LOC/KSDK/hal/fsl_i2c_hal.h</locationURI>
-		</link>
-		<link>
-			<name>Sources/KSDK/fsl_misc_utilities.c</name>
-			<type>1</type>
-			<locationURI>PARENT-2-PROJECT_LOC/KSDK/hal/fsl_misc_utilities.c</locationURI>
-		</link>
-		<link>
-			<name>Sources/KSDK/fsl_misc_utilities.h</name>
-			<type>1</type>
-			<locationURI>PARENT-2-PROJECT_LOC/KSDK/hal/fsl_misc_utilities.h</locationURI>
+			<locationURI>PARENT-2-PROJECT_LOC/CMSIS_Driver/pins_MKL25Z4.h</locationURI>
 		</link>
 	</linkedResources>
 </projectDescription>

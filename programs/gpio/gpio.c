@@ -36,7 +36,7 @@ void delay(void);
 int main(void)
 {
 
-	GPIO_initialize();
+	GPIO_Initialize();
 
 	// Nastavit pin pro LED jako vystup
 	pinMode(LD1, OUTPUT);

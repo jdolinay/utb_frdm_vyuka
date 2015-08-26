@@ -87,7 +87,32 @@ typedef enum _uart0_baudrates
   * be defined in project settings > C compiler > preprocesor > symbols, for example:
   * CLOCK_SETUP=1
   */
-void UART0_initialize(UART0_baudrate baudrate);
+/*
+ * Initialize UART0
+ */
+void UART0_initialize(UART0_baudrate baudrate) {
+	/* Enable clock for PORTA needed for Tx, Rx pins */
+	SIM->SCGC5 |= SIM_SCGC5_PORTA_MASK;
+	/* Enable the UART_RXD function on PTA1 */
+	PORTA->PCR[1] = PORT_PCR_MUX(2);
+	/* Enable the UART_TXD function on PTA2 */
+	PORTA->PCR[2] = PORT_PCR_MUX(2);
+	/* set clock for UART0 */
+	SIM->SOPT2 |= SIM_SOPT2_UART0SRC(MSF_UART0_CLKSEL);
+	SIM->SCGC4 |= SIM_SCGC4_UART0_MASK;
+	/* Disable UART0 before changing registers */
+	/* uart->reg->C2 &= ~(UART0_C2_TE_MASK | UART0_C2_RE_MASK); */
+	UART0->C2 = 0;
+	UART0->C1 = 0;
+	UART0->C3 = 0;
+	UART0->BDH = 0;
+	/* changes C4 and C5 to default values + sets baudrate preserving the other bits in BDH*/
+	f_UART0_SetBaudrate(baudrate);
+	/* Clear Receiver overrun flag, just in case */
+	UART0->S1 |= UART0_S1_OR_MASK;
+	/* Enable receiver and transmitter */
+	UART0->C2 |= (UART0_C2_TE_MASK | UART0_C2_RE_MASK);
+}
 
 /**
   * @brief Write 1 byte to UART
@@ -95,7 +120,7 @@ void UART0_initialize(UART0_baudrate baudrate);
   * @return none
   * @note
   */
-void UART0_write(uint8_t data);
+void UART0_Write(uint8_t data);
 
 /**
   * @brief Read one byte from UART
@@ -105,7 +130,7 @@ void UART0_write(uint8_t data);
   * For non-blocking use, first check if there is anything to read by calling
   * uart0_data_available, then call uart0_read.
   */
-uint8_t UART0_read(void);
+uint8_t UART0_Read(void);
 
 /**
   * @brief Check whether there are some data received in UART buffer.
@@ -113,7 +138,7 @@ uint8_t UART0_read(void);
   * @return zero if no data are available, nonzero if data are available.
   * @note
   */
-uint8_t UART0_data_available(void);
+uint8_t UART0_Data_Available(void);
 
 /**
  * @brief Send one character to SCI. If the char is "\n", send CR + LF

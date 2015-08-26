@@ -19,7 +19,7 @@ static void f_GPIO_set_pin_mode(PORT_Type* port, GPIO_Type* gpio, uint8_t pin, F
 
 
 /* Initialize the gpio driver for LEDs and push buttons. */
-void GPIO_initialize(void)
+void GPIO_Initialize(void)
 {
 	// Enable clock for ports A and B
 	SIM->SCGC5 |= (SIM_SCGC5_PORTA_MASK | SIM_SCGC5_PORTB_MASK );

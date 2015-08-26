@@ -31,25 +31,6 @@
 
 #include "Driver_I2C.h"
 
-/* jd TODO: howto declare the driver instances?*/
-#if 0
-#if (RTE_I2C0)
-extern ARM_DRIVER_I2C Driver_I2C0;
-#endif
-
-#if (RTE_I2C1)
-extern ARM_DRIVER_I2C Driver_I2C1;
-#endif
-#endif
-
-
-/* Clock Control Unit register */
-/* jd: not used
-#define CCU_CLK_CFG_RUN     (1 << 0)
-#define CCU_CLK_CFG_AUTO    (1 << 1)
-#define CCU_CLK_STAT_RUN    (1 << 0)
-#define CLK_SRC_PLL1        0x09            // I2C clock source
-*/
 
 /* I2C reset value for RGU */
 #define RGU_RESET_I2C0      (1 << 16)       // I2C0 reset
@@ -61,15 +42,6 @@ extern ARM_DRIVER_I2C Driver_I2C1;
 #define I2C_FLAG_SETUP      (1 << 2)        // Master configured, clock set
 #define I2C_FLAG_SLAVE_RX   (1 << 3)        // Slave receive registered
 
-/* I2C Common Control flags */
-/* jd: we are using <device>.h flags
-#define I2C_CON_AA          (1 << 2)        // Assert acknowledge bit
-#define I2C_CON_SI          (1 << 3)        // I2C interrupt bit
-#define I2C_CON_STO         (1 << 4)        // STOP bit
-#define I2C_CON_STA         (1 << 5)        // START bit
-#define I2C_CON_I2EN        (1 << 6)        // I2C interface enable
-#define I2C_CON_FLAGS       (I2C_CON_AA | I2C_CON_SI | I2C_CON_STO | I2C_CON_STA)
-*/
 
 /* I2C Stalled Status flags */
 #define I2C_MASTER          (1 << 0)        // Master stalled
@@ -80,39 +52,6 @@ extern ARM_DRIVER_I2C Driver_I2C1;
 /* I2C Status Miscellaneous states */
 #define I2C_STAT_BUSERR      0x00           // I2C Bus error
 
-/* I2C Status Master mode */
-/* jd: not used */
-/*
-#define I2C_STAT_MA_START    0x08           // START transmitted
-#define I2C_STAT_MA_RSTART   0x10           // Repeated START transmitted
-#define I2C_STAT_MA_SLAW_A   0x18           // SLA+W transmitted, ACK received
-#define I2C_STAT_MA_SLAW_NA  0x20           // SLA+W transmitted, no ACK recvd
-#define I2C_STAT_MA_DT_A     0x28           // Data transmitted, ACK received
-#define I2C_STAT_MA_DT_NA    0x30           // Data transmitted, no ACK recvd
-#define I2C_STAT_MA_ALOST    0x38           // Arbitration lost SLA+W or data
-#define I2C_STAT_MA_SLAR_A   0x40           // SLA+R transmitted, ACK received
-#define I2C_STAT_MA_SLAR_NA  0x48           // SLA+R transmitted, no ACK recvd
-#define I2C_STAT_MA_DR_A     0x50           // Data received, ACK returned
-#define I2C_STAT_MA_DR_NA    0x58           // Data received, no ACK returned
-*/
-/* I2C Status Slave mode */
-/* jd: not used */
-/*
-#define I2C_STAT_SL_SLAW_A   0x60           // SLA+W received, ACK returned
-#define I2C_STAT_SL_ALOST_MW 0x68           // Arbitration lost SLA+W in Master mode
-#define I2C_STAT_SL_GCA_A    0x70           // General address recvd, ACK returned
-#define I2C_STAT_SL_ALOST_GC 0x78           // Arbitration lost in General call
-#define I2C_STAT_SL_DR_A     0x80           // Data received, ACK returned
-#define I2C_STAT_SL_DR_NA    0x88           // Data received, no ACK returned
-#define I2C_STAT_SL_DRGC_A   0x90           // Data recvd General call, ACK returned
-#define I2C_STAT_SL_DRGC_NA  0x98           // Data recvd General call, no ACK returned
-#define I2C_STAT_SL_STOP     0xA0           // STOP received while addressed
-#define I2C_STAT_SL_SLAR_A   0xA8           // SLA+R received, ACK returned
-#define I2C_STAT_SL_ALOST_MR 0xB0           // Arbitration lost SLA+R in Master mode
-#define I2C_STAT_SL_DT_A     0xB8           // Data transmitted, ACK received
-#define I2C_STAT_SL_DT_NA    0xC0           // Data transmitted, no ACK received
-#define I2C_STAT_SL_LDT_A    0xC8           // Last data transmitted, ACK received
-*/
 
 /* I2C Control Information */
 typedef struct {
@@ -148,5 +87,16 @@ typedef struct {
   //jd: uint32_t              rgu_val;            // Peripheral reset value
   I2C_CTRL             *ctrl;               // Run-Time control information
 } const I2C_RESOURCES;
+
+
+/* Declare the driver instances */
+#if (RTE_I2C0)
+extern ARM_DRIVER_I2C Driver_I2C0;
+#endif
+
+#if (RTE_I2C1)
+extern ARM_DRIVER_I2C Driver_I2C1;
+#endif
+
 
 #endif /* __I2C_MKL25Z4_H */
