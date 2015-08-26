@@ -46,14 +46,14 @@ int main(void)
     bool commandReady;
 
 	// Inicializace serioveho rozhrani UART
-	uart0_initialize(BD9600);
+	UART0_initialize(BD9600);
 
 	while (1) {
 		// Cekame na prichod znaku
-		rcvChar = uart0_getch();
+		rcvChar = UART0_getch();
 
 		// Odesleme znak zpet na seriovou linku (echo)
-		uart0_putch(rcvChar);
+		UART0_putch(rcvChar);
 
 		/* Build a new command. */
 		commandReady = cliBuildCommand(rcvChar);
@@ -63,7 +63,7 @@ int main(void)
 		if (commandReady) {
 			commandReady = false;
 			cliProcessCommand();
-			uart0_putch('>');
+			UART0_putch('>');
 		}
 	}
 
@@ -136,21 +136,21 @@ void cliProcessCommand(void)
     if ( strcmp(G_CommandBuffer, "ledon") == 0 )
     {
         //PTFD_PTFD0 = 0;
-        uart0_puts("\n\rLED1 is on\n\r");
+        UART0_puts("\n\rLED1 is on\n\r");
     }
     else if (strcmp(G_CommandBuffer, "ledoff") == 0 )
     {
        // PTFD_PTFD0 = 1;
-        uart0_puts("\n\rLED1 is off\n\r");
+        UART0_puts("\n\rLED1 is off\n\r");
     }
     else if (strcmp(G_CommandBuffer, "ver") == 0 )
     {
         /* send our version info */
-    	uart0_puts("\n\rCLI demo version 1.0\n\r");
+    	UART0_puts("\n\rCLI demo version 1.0\n\r");
     }
     else
     {
-    	uart0_puts("\n\rUnknown command\n\r");
+    	UART0_puts("\n\rUnknown command\n\r");
     }
 
 }

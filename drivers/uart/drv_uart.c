@@ -15,7 +15,7 @@
 #define		UART_GET_BR_UART1(baud_val)	((baud_val & 0x7FFC0000) >> 18)			/* the BR for UART1/2, 13-bit long*/
 
 /* Internal functions */
-static void uart0_setbaudrate(UART0_baudrate baudrate);
+static void f_UART0_setbaudrate(UART0_baudrate baudrate);
 
 const char UTB_UART_CR = (const char)0x0D;
 const char UTB_UART_LF = (const char)0x0A;
@@ -23,7 +23,7 @@ const char UTB_UART_LF = (const char)0x0A;
 /*
  * Initialize UART0
  */
-void uart0_initialize(UART0_baudrate baudrate)
+void UART0_initialize(UART0_baudrate baudrate)
 {
 	/* Enable clock for PORTA needed for Tx, Rx pins */
 	SIM->SCGC5 |= SIM_SCGC5_PORTA_MASK;
@@ -44,8 +44,7 @@ void uart0_initialize(UART0_baudrate baudrate)
 	UART0->C3 = 0;	/* default values */
 	UART0->BDH = 0;	/* default value including 1 stop bit */
 
-	/* changes C4 and C5 to default values + sets baudrate preserving the other bits in BDH*/
-	uart0_setbaudrate(baudrate);
+	/* changes C4 and C5 to default values + sets baudrate preserving the other bits in BDH*/	f_UART0_setbaudrate(baudrate);
 
 	/* Clear Receiver overrun flag, just in case */
 	UART0->S1  |= UART0_S1_OR_MASK;
@@ -58,7 +57,7 @@ void uart0_initialize(UART0_baudrate baudrate)
 /* Write single byte to SCI
  * param data byte of data to write
  */
- void uart0_write(uint8_t data)
+ void UART0_write(uint8_t data)
  {
 	 /* Wait until space is available in the FIFO */
 	 while(!(UART0->S1 & UART0_S1_TDRE_MASK))
@@ -71,7 +70,7 @@ void uart0_initialize(UART0_baudrate baudrate)
  /* Read byte form SCI; wait for data to arrive!
   * return byte received from SCI.
   */
- uint8_t uart0_read(void)
+ uint8_t UART0_read(void)
  {
 	 /* Wait until character has been received */
 	 while (!(UART0->S1 & UART0_S1_RDRF_MASK)) {
@@ -94,44 +93,44 @@ void uart0_initialize(UART0_baudrate baudrate)
  /* Check if data are available for reading
   * return 1 if there are data, 0 if not
  */
- uint8_t uart0_data_available(void)
+ uint8_t UART0_data_available(void)
  {
 	 return ((UART0->S1 & UART0_S1_RDRF_MASK) != 0);
  }
 
  /* read one character. Blocks the caller until a character is available! */
- char uart0_getch(void)
+ char UART0_getch(void)
  {
- 	return (char)uart0_read();
+ 	return (char)UART0_read();
  }
 
  /* send one character to console */
- void uart0_putch(char c)
+ void UART0_putch(char c)
  {
      if(c == '\n')
      {
-     	uart0_write(UTB_UART_CR);
-     	uart0_write(UTB_UART_LF);
+     	UART0_write(UTB_UART_CR);
+     	UART0_write(UTB_UART_LF);
      }
      else
      {
-    	 uart0_write(c);
+    	 UART0_write(c);
      }
  }
 
  /* send null-terminated string */
- void uart0_puts(const char* str)
+ void UART0_puts(const char* str)
  {
  	while(*str)
     {
      	if( *str == '\n')
      	{
-     		uart0_write(UTB_UART_CR);
-     		uart0_write(UTB_UART_LF);
+     		UART0_write(UTB_UART_CR);
+     		UART0_write(UTB_UART_LF);
      	}
      	else
      	{
-     		uart0_write(*str);
+     		UART0_write(*str);
      	}
 
      	str++;
@@ -139,14 +138,14 @@ void uart0_initialize(UART0_baudrate baudrate)
  }
 
  /* read string from console. */
- uint32_t uart0_gets(char* str, uint32_t max_chars, char terminator)
+ uint32_t UART0_gets(char* str, uint32_t max_chars, char terminator)
  {
      char c;
      uint8_t i;
 
      for ( i = 0; i < max_chars; i++ )
      {
-     	c = uart0_getch();
+     	c = UART0_getch();
      	if ( c != terminator )
              str[i] = c;
      	else
@@ -159,7 +158,7 @@ void uart0_initialize(UART0_baudrate baudrate)
 
 
  /*internal function */
-static void uart0_setbaudrate(UART0_baudrate baudrate)
+static void f_UART0_setbaudrate(UART0_baudrate baudrate)
 {
 	uint32_t osr_val;
 	uint32_t sbr_val;

@@ -27,7 +27,7 @@ int main(void)
 {
 
 	// Pro praci s LED vyuzijeme ovladac GPIO
-	gpio_initialize();
+	GPIO_initialize();
 
 	// Piny pro LED jako vystupy
 	pinMode(LD1, OUTPUT);

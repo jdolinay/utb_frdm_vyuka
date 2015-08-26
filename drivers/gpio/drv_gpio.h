@@ -15,6 +15,10 @@
  * Nazvy funkci neodpovidaji doporucene konvenci {nazev_ovladace}_{nazev_funkce}, aby byla
  * zajistena jejich podobnost funkcim Arduina, ktere jsou obecne zname.
  *
+ * Vyjimky z doporucenych konvenci kvuli strucnejsimu zapisu programu:
+ * - funkce pinWrite, pinMode, pinRead nezacinaji predponou modulu (GPIO)
+ * - nazvy polozek vyctovych typu (enum) neobsahuji nazev modulu (GPIO).
+ *
  *
  */
 #ifndef	UTBFRDM_DRV_GPIO_H
@@ -68,7 +72,7 @@ typedef enum _utb_frdm_pin_modes
   * @return none
   * @note It will enable the clock for the ports as required.
   */
-void gpio_initialize(void);
+void GPIO_initialize(void);
 
 /**
   * @brief Configure given pin to behave as input or output.

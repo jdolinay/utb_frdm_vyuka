@@ -23,6 +23,8 @@
 #ifndef	UTBFRDM_DRV_LCD_H
 #define UTBFRDM_DRV_LCD_H
 
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -40,7 +42,7 @@ extern "C" {
   * @note
   *
   */
-void lcd_initialize(void);
+void LCD_initialize(void);
 
 /**
   * @brief Set cursor to given line and column within the line
@@ -50,7 +52,7 @@ void lcd_initialize(void);
   * @note
   *
   */
-void lcd_set_cursor(uint8_t line, uint8_t column);
+void LCD_set_cursor(uint8_t line, uint8_t column);
 
 /**
   * @brief Display one character on the display; at current cursor position.
@@ -58,7 +60,7 @@ void lcd_set_cursor(uint8_t line, uint8_t column);
   * @return none
   * @note
   */
-void lcd_putch(char c);
+void LCD_putch(char c);
 
 /**
   * @brief Display null-terminated string on the display; at current cursor position.
@@ -66,28 +68,28 @@ void lcd_putch(char c);
   * @return none
   * @note
   */
-void lcd_puts(const char* str);
+void LCD_puts(const char* str);
 
 /**
   * @brief Clear the display.
   * @return none
   * @note
   */
-void lcd_clear(void);
+void LCD_clear(void);
 
 /**
   * @brief Turn on the display back light
   * @return none
   * @note
   */
-void lcd_backlight_on(void);
+void LCD_backlight_on(void);
 
 /**
   * @brief Turn off the display back light
   * @return none
   * @note
   */
-void lcd_backlight_off(void);
+void LCD_backlight_off(void);
 
 
 /*@} end of UTB_FRDM_LCDDriver */

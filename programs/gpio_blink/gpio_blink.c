@@ -31,7 +31,7 @@ void delay(void);
 int main(void)
 {
 	// Inicializovat ovladac gpio - povoli clock pro porty A a B
-	gpio_initialize();
+	GPIO_initialize();
 
 	// Nastavit pin jako vystup
 	pinMode(LD1, OUTPUT);

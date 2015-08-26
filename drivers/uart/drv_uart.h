@@ -87,7 +87,7 @@ typedef enum _uart0_baudrates
   * be defined in project settings > C compiler > preprocesor > symbols, for example:
   * CLOCK_SETUP=1
   */
-void uart0_initialize(UART0_baudrate baudrate);
+void UART0_initialize(UART0_baudrate baudrate);
 
 /**
   * @brief Write 1 byte to UART
@@ -95,7 +95,7 @@ void uart0_initialize(UART0_baudrate baudrate);
   * @return none
   * @note
   */
-void uart0_write(uint8_t data);
+void UART0_write(uint8_t data);
 
 /**
   * @brief Read one byte from UART
@@ -105,7 +105,7 @@ void uart0_write(uint8_t data);
   * For non-blocking use, first check if there is anything to read by calling
   * uart0_data_available, then call uart0_read.
   */
-uint8_t uart0_read(void);
+uint8_t UART0_read(void);
 
 /**
   * @brief Check whether there are some data received in UART buffer.
@@ -113,20 +113,20 @@ uint8_t uart0_read(void);
   * @return zero if no data are available, nonzero if data are available.
   * @note
   */
-uint8_t uart0_data_available(void);
+uint8_t UART0_data_available(void);
 
 /**
  * @brief Send one character to SCI. If the char is "\n", send CR + LF
  * @param[in] c char to send
  */
-void uart0_putch(char c);
+void UART0_putch(char c);
 
 /**
  * @brief Send null-terminated string to SCI.
  * @param[in] str pointer to string to send
  * @note If the string contains "\n", CR + LF are sent.
  */
-void uart0_puts(const char* str);
+void UART0_puts(const char* str);
 
 /**
  * @brief Read one character from SCI.
@@ -134,7 +134,7 @@ void uart0_puts(const char* str);
  * @note This function will block the caller, if there is no character available
  * and wait for character to arrive.
  */
-char uart0_getch(void);
+char UART0_getch(void);
 
 /**
  * @brief Read string from SCI. It will block the caller untill reading is finished.
@@ -152,7 +152,7 @@ char uart0_getch(void);
  * The resulting string is null-terminated (valid C-language string) in all cases.
  * The terminator character in not included in the resulting string.
  */
-uint32_t uart0_gets(char* str, uint32_t max_chars, char terminator);
+uint32_t UART0_gets(char* str, uint32_t max_chars, char terminator);
 
 
 

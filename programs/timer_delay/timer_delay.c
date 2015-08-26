@@ -25,7 +25,7 @@ void TPMInitialize(void);
 int main(void)
 {
 	// Pro ovladani LED pouzijeme ovladac GPIO
-	gpio_initialize();
+	GPIO_initialize();
 	pinMode(LD1, OUTPUT);
 	pinWrite(LD1, HIGH);
 

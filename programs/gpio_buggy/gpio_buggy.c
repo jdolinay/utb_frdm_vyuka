@@ -32,7 +32,7 @@ void delay(void);
 int main(void)
 {
 
-	gpio_initialize();
+	GPIO_initialize();
 
 	// Nastavit pin jako vystup
 	pinMode(LD2, OUTPUT);

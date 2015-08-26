@@ -30,8 +30,8 @@ int main(void)
 	PTB->PDDR |= (1 << LED_PIN);
 	*/
 
-	uart0_initialize(BD9600);	// BD115200
-	systick_initialize();
+	UART0_initialize(BD9600);	// BD115200
+	SYSTICK_initialize();
 
 	while ( 1 )
 	{
@@ -42,17 +42,17 @@ int main(void)
 		systick_delay_ms(1000);
 		 */
 
-		start = systick_millis();
-		systick_delay_ms(10);
-		end = systick_millis();
+		start = SYSTICK_millis();
+		SYSTICK_delay_ms(10);
+		end = SYSTICK_millis();
 		result = end - start;
 
 		sprintf(buf, "%u", result );
-		uart0_puts("Vysledek: ");
-		uart0_puts(buf);
-		uart0_puts("\n");
+		UART0_puts("Vysledek: ");
+		UART0_puts(buf);
+		UART0_puts("\n");
 
-		systick_delay_ms(3000);
+		SYSTICK_delay_ms(3000);
 	}
 
     /* Never leave main */

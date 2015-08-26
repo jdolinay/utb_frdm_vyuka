@@ -42,7 +42,7 @@ volatile uint32_t   gmsf_delaycnt;
 
 
 /* Initialize the systick driver.*/
-void systick_initialize(void)
+void SYSTICK_initialize(void)
 {
 	/* Use SysTick as reference for the delay loops.
 	   Configure the SysTick interrupt to occur every ms */
@@ -52,14 +52,14 @@ void systick_initialize(void)
 }
 
 /* Get the number of milliseconds that elapsed since the CPU started.  */
-uint32_t systick_millis(void)
+uint32_t SYSTICK_millis(void)
 {
 	return gmsf_systime;
 }
 
 
 /* Get the number of microseconds that elapsed since the CPU started. */
-uint32_t systick_micros(void)
+uint32_t SYSTICK_micros(void)
 {
 	uint32_t fraction = (SysTick->LOAD - SysTick->VAL) / MSF_SYSTICK_VALINUS;
 	/* The value in the SysTick->LOAD register is the number of clock ticks
@@ -70,12 +70,12 @@ uint32_t systick_micros(void)
 	 * in 1 ms.
 	 * msf_<device>.h defines constant we use to convert the count in LOAD to us  */
 
-	    return (systick_millis() * 1000u + fraction);
+	    return (SYSTICK_millis() * 1000u + fraction);
 }
 
 
 /* Stop the execution for given number of milliseconds using busy-wait loop. */
-void systick_delay_ms(uint32_t millis)
+void SYSTICK_delay_ms(uint32_t millis)
 {
 	 gmsf_delaycnt = millis;
 

@@ -61,6 +61,7 @@
 #define	LCD_DB7_Read()	LCD_PinRead(LCD_PINS_DATA_GPIO, LCD_PINS_DB7_PIN)
 
 #define lcd_short_delay() __asm__ __volatile__ ("NOP" "\n\t")
+static const int F_LCD_CHARS_MAX = 20;
 
 /* Internal functions */
 static inline void lcd_delay_1us(void) __attribute__((always_inline));
@@ -89,7 +90,7 @@ static void lcd_pulse_e_pin(void);
 
 
 /* initialize display */
-void lcd_initialize(void)
+void LCD_initialize(void)
 {
 	/* enable clock for ports used by this driver */
 	SIM->SCGC5 |= LCD_PORT_CLOCK_MASK;
@@ -174,18 +175,25 @@ void lcd_initialize(void)
 }
 
 /* Set cursor to given line and column within the line */
-void lcd_set_cursor(uint8_t line, uint8_t column)
+void LCD_set_cursor(uint8_t line, uint8_t column)
 {
 	uint8_t address;
 
-	if (column < 1)
+	if (column < 1) {
 		column = 1;
-	if (column > 20)
-		column = 20;
-	if (line < 1)
+	}
+
+	if (column > F_LCD_CHARS_MAX) {
+		column = F_LCD_CHARS_MAX;
+	}
+
+	if (line < 1) {
 		line = 1;
-	if (line > 4)
+	}
+
+	if (line > 4) {
 		line = 4;
+	}
 
 	switch (line) {
 	case 1:
@@ -206,22 +214,20 @@ void lcd_set_cursor(uint8_t line, uint8_t column)
 }
 
 /* Display one character on the display; at current cursor position. */
-void lcd_putch(char c)
+void LCD_putch(char c)
 {
 	lcd_wr_data(c);
 }
 
 /* Display null-terminated string on the display; at current cursor position. */
-void lcd_puts(const char* str)
+void LCD_puts(const char* str)
 {
 	uint8_t n = 0;
-	while(*str)
-	{
-		lcd_putch(*str);
+	while(*str) {
+		LCD_putch(*str);
 		str++;
 		n++;
-		if (n > 20 )
-		{
+		if (n > F_LCD_CHARS_MAX) {
 			// chyba: textovy retezec je prilis dlouhy nebo neni zakoncen nulou
 			while(1)
 				;
@@ -230,7 +236,7 @@ void lcd_puts(const char* str)
 }
 
 /* Clear the display. */
-void lcd_clear(void)
+void LCD_clear(void)
 {
 	// smazani displeje
 	lcd_wr_register(0b00000001);
@@ -238,18 +244,16 @@ void lcd_clear(void)
 	lcd_wr_register(0b00000010);
 }
 
-void lcd_backlight_on(void)
+void LCD_backlight_on(void)
 {
 	// back light off
 	LCD_PinSet(LCD_PINS_LIGHT_GPIO, LCD_PINS_LIGHT_PIN);
-
 }
 
-void lcd_backlight_off(void)
+void LCD_backlight_off(void)
 {
 	// back light off
 	LCD_PinClear(LCD_PINS_LIGHT_GPIO, LCD_PINS_LIGHT_PIN);
-
 }
 
 

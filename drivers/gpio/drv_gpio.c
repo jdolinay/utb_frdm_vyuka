@@ -12,14 +12,14 @@
 
 
 /*  Internal functions */
-static void gpio_set_pin_mode(PORT_Type* port, GPIO_Type* gpio, uint8_t pin, FRDM_kit_pinmode mode );
+static void f_GPIO_set_pin_mode(PORT_Type* port, GPIO_Type* gpio, uint8_t pin, FRDM_kit_pinmode mode );
 
 /* Example of internal constants*/
 /*const char UTB_UART_CR = (const char)0x0D;*/
 
 
 /* Initialize the gpio driver for LEDs and push buttons. */
-void gpio_initialize(void)
+void GPIO_initialize(void)
 {
 	// Enable clock for ports A and B
 	SIM->SCGC5 |= (SIM_SCGC5_PORTA_MASK | SIM_SCGC5_PORTB_MASK );
@@ -42,7 +42,7 @@ void pinMode(FRDM_kit_pin pin, FRDM_kit_pinmode mode )
 		case LED_RED:
 		case LED_GREEN:
 			PORTB->PCR[(uint8_t) pin] = PORT_PCR_MUX(1); /* set pin to GPIO mode */
-			gpio_set_pin_mode(PORTB, PTB, (uint8_t) pin, mode); /* pin mode to input/output */
+			f_GPIO_set_pin_mode(PORTB, PTB, (uint8_t) pin, mode); /* pin mode to input/output */
 			break;
 
 		case SW1:
@@ -50,7 +50,7 @@ void pinMode(FRDM_kit_pin pin, FRDM_kit_pinmode mode )
 		case SW3:
 		case SW4:
 			PORTA->PCR[(uint8_t) pin] = PORT_PCR_MUX(1); /* set pin to GPIO mode */
-			gpio_set_pin_mode(PORTA, PTA, (uint8_t) pin, mode); /* pin mode to input/output */
+			f_GPIO_set_pin_mode(PORTA, PTA, (uint8_t) pin, mode); /* pin mode to input/output */
 			break;
 
 		default:
@@ -131,7 +131,7 @@ uint8_t pinRead(FRDM_kit_pin pin)
 
 /*internal function
  */
-static void gpio_set_pin_mode(PORT_Type* port, GPIO_Type* gpio, uint8_t pin, FRDM_kit_pinmode mode )
+static void f_GPIO_set_pin_mode(PORT_Type* port, GPIO_Type* gpio, uint8_t pin, FRDM_kit_pinmode mode )
 {
 	switch( mode)
 	{

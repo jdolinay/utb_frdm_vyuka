@@ -35,28 +35,28 @@ int main(void)
 	// vyuzito v delay_ms
 	SysTick_Config(SystemCoreClock / 1000u );
 
-	uart0_initialize(BD9600);
+	UART0_initialize(BD9600);
 
 	while ( 1 )
 	{
 		// Pokud je "vypis" povolen, vypisujeme text
 		if (vypis )
-			uart0_puts("ahoj\n");
+			UART0_puts("ahoj\n");
 
 		// poslanim znaku s jde vypis zastavit a znovu spustit
 		// Testujeme, zda je ve vyrovnavaci pameti UART modulu prijaty znak...
-		if ( uart0_data_available() )
+		if ( UART0_data_available() )
 		{
 			// a pokud ano, precteme jej
-			c = uart0_getch();
+			c = UART0_getch();
 			// odesleme znak zpet = echo
-			uart0_putch(c);
+			UART0_putch(c);
 
 			// vyhodnotime precteny znak
 			if ( c == 's' )
 			{
 				vypis = !vypis;	// negujeme hodnotu "vypis"
-				uart0_puts("\nPrikaz prijat.\n");// vypiseme potvrzeni prikazu
+				UART0_puts("\nPrikaz prijat.\n");// vypiseme potvrzeni prikazu
 			}
 		}
 

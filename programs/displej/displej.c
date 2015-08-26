@@ -17,29 +17,29 @@ int main(void)
 {
 
 	// 1. Inicializujeme displej
-	lcd_initialize();
+	LCD_initialize();
 
 	// 2. Smazeme displej. Kurzor bude na radku 1, sloupci 1.
-	lcd_clear();
+	LCD_clear();
 
 
 	// Vypis jednoho znaku
-	lcd_putch('U');
+	LCD_putch('U');
 	// posun kurzoru na stred prvniho radku
-	lcd_set_cursor(1,10);
-	lcd_putch('T');
-	lcd_set_cursor(1,20);
-	lcd_putch('B');
+	LCD_set_cursor(1,10);
+	LCD_putch('T');
+	LCD_set_cursor(1,20);
+	LCD_putch('B');
 
 	// Na dalsi radky vypiseme texty
-	lcd_set_cursor(2,1);
-	lcd_puts("Ahoj svete!");
+	LCD_set_cursor(2,1);
+	LCD_puts("Ahoj svete!");
 
-	lcd_set_cursor(3,1);
-	lcd_puts("Radek 3,");
+	LCD_set_cursor(3,1);
+	LCD_puts("Radek 3,");
 
-	lcd_set_cursor(4,1);
-	lcd_puts("Radek 4");
+	LCD_set_cursor(4,1);
+	LCD_puts("Radek 4");
 
 
 	while(1)
