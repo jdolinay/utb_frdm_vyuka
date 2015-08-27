@@ -4,8 +4,6 @@
  * Program ukazuje cteni dat z teplomeru a vlhkometu pres I2C.
  * Namerene hodnoty zobrazuje na LCD displeji.
  *
- * POZOR: v nastaveni projektu > compiler > preprocesor musi byt CLOCK_SETUP=1
- * aby byl CPU clock 48 MHz!
  *
  * Postup vytvoreni projektu s ovladacem I2C
  * 1) Pridat do projektu soubor RTE_Devices.h z CMSIS_Driver/Config.
@@ -25,7 +23,7 @@
  *  KSDK/hal
  *  KSDK/mkl25z4
  *  Muzeme pridat absolutni cesty. Pro cesty v KSDK muzeme take pridat odkazy
- *  pres tlacitko Worspace.
+ *  pres tlacitko Workspace.
  *  Priklad konkretnich cest v seznamu Includes:
  *  "../../../CMSIS_Driver"
  *  "${workspace_loc:/${ProjName}/KSDK/hal}"
@@ -82,7 +80,7 @@ int main(void)
 	while(1) {
 		humidity = MeasureHumidity();
 		temperature = MeasureTemperature();
-		delay();
+		SYSTICK_delay_ms(1000);
 
 		LCD_clear();
 		sprintf(buffer, "H: %d %%", humidity);
@@ -230,13 +228,6 @@ void i2c0_event(uint32_t event)
 	;
 }
 
-// kratke zpozdeni
-void delay(void)
-{
-	uint32_t n = 500000L;
-	while(n > 0)
-		n--;
-}
 
 
 

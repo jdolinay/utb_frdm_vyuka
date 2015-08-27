@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>i2c_demo</name>
+	<name>i2c_accel</name>
 	<comment></comment>
 	<projects>
 	</projects>
@@ -56,9 +56,9 @@
 			<locationURI>PARENT-2-PROJECT_LOC/drivers/systick/drv_systick.h</locationURI>
 		</link>
 		<link>
-			<name>Sources/i2c_demo.c</name>
+			<name>Sources/i2c_accel.c</name>
 			<type>1</type>
-			<locationURI>PARENT-2-PROJECT_LOC/programs/i2c_demo/i2c_demo.c</locationURI>
+			<locationURI>PARENT-2-PROJECT_LOC/programs/i2c_accel/i2c_accel.c</locationURI>
 		</link>
 	</linkedResources>
 </projectDescription>
