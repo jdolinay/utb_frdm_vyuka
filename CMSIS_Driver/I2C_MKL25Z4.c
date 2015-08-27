@@ -41,6 +41,7 @@
  *    - ...
  *  Version 1.00
  *    - First version based on Keil driver for NXP LPC18xx V2.01
+ *    Only Master mode supported.
  */
 
 /* Notes:
@@ -53,17 +54,6 @@
  * repeated START and receives data - this is initiated by call to MasterReceive.
  */
 
-/* Poznamky:
-
- 6.8.2015 Funguje cteni vlhkosti i mereni teploty tj. poslani jednoducheho
- prikazu ve forme jen slave adresy + Read bit a prijeti odpovedi
- i slozitejsi prikaz s odpovedi (s RE-START)
-
- Testovano pro 48 MHz i 20,9 MHz
- TODO: na osciloskopu overit zda sedi frekvence i2c
- TODO: zkusit I2C0.
- */
-
 #include <string.h>
 
 #include "I2C_MKL25Z4.h"   //#include "I2C_LPC18xx.h"
@@ -73,20 +63,9 @@
 #include "pins_MKL25Z4.h"
 
 #include "RTE_Device.h"
-//#include "RTE_Components.h"  // jd: asi konfigurace ktere drivery jsou enabled v projektu, tj. #define I2C0  1  apod.
 
 #define ARM_I2C_DRV_VERSION ARM_DRIVER_VERSION_MAJOR_MINOR(1,00) /* driver version */
 
-/* jd: check if I2C driver instance is enabled (in RTE_Components.h?),
- but it is not configured.
- RTE_I2C0 must be set to 1 in RTE_Device.h. to indicate it is configured.
- */
-#if ((defined(RTE_Drivers_I2C0) || \
-      defined(RTE_Drivers_I2C1))   \
-     && !RTE_I2C0                  \
-     && !RTE_I2C1)
-#error "I2C not configured in RTE_Device.h!"
-#endif
 
 
 /**
@@ -145,8 +124,7 @@ static I2C_CTRL I2C0_Ctrl = { 0 };
 static I2C_RESOURCES I2C0_Resources = {
   I2C0,		/* registers of the I2C module instance for this driver */
   I2C0_IRQn,
-  &SIM->SCGC4, // jd: register where clock for i2c is enabled //&LPC_CCU1->CLK_APB1_I2C0_CFG,
-  //RGU_RESET_I2C0,
+  &SIM->SCGC4, // jd: register where clock for i2c is enabled
   &I2C0_Ctrl
 };
 #endif /* RTE_I2C0 */
@@ -160,8 +138,7 @@ static I2C_CTRL I2C1_Ctrl = { 0 };
 static I2C_RESOURCES I2C1_Resources = {
   I2C1,		/* registers of the I2C module instance for this driver */
   I2C1_IRQn,
-  &SIM->SCGC4, //&LPC_CCU1->CLK_APB3_I2C1_CFG,
-  //RGU_RESET_I2C1,
+  &SIM->SCGC4,
   &I2C1_Ctrl
 };
 #endif /* RTE_I2C1 */
@@ -191,6 +168,7 @@ static ARM_I2C_CAPABILITIES I2C_GetCapabilities (void) {
   \param[in]   cb_event  Pointer to \ref ARM_I2C_SignalEvent
   \param[in]   i2c   Pointer to I2C resources
   \return      \ref execution_status
+  \note			It enables the clock in SIM for the ports of the pin used by the driver.
 */
 static int32_t I2Cx_Initialize (ARM_I2C_SignalEvent_t cb_event, I2C_RESOURCES *i2c) {
 
@@ -209,10 +187,18 @@ static int32_t I2Cx_Initialize (ARM_I2C_SignalEvent_t cb_event, I2C_RESOURCES *i
 
   /* Configure I2C Pins */
   if (i2c->reg == I2C0) {
+	  // Enable clock for the pins port
+	  PINS_EnablePinPortClock(RTE_I2C0_SCL_PIN);
+	  PINS_EnablePinPortClock(RTE_I2C0_SDA_PIN);
+
+	  // Set pin function to I2C
 	  PINS_PinConfigure(RTE_I2C0_SCL_PIN, RTE_I2C0_SCL_FUNC);
 	  PINS_PinConfigure(RTE_I2C0_SDA_PIN, RTE_I2C0_SDA_FUNC);
+
   }
   else if (i2c->reg == I2C1) {
+	  PINS_EnablePinPortClock(RTE_I2C1_SCL_PIN);
+	  PINS_EnablePinPortClock(RTE_I2C1_SDA_PIN);
 	  PINS_PinConfigure(RTE_I2C1_SCL_PIN, RTE_I2C1_SCL_FUNC);
 	  PINS_PinConfigure(RTE_I2C1_SDA_PIN, RTE_I2C1_SDA_FUNC);
   }
@@ -401,9 +387,6 @@ static int32_t I2Cx_MasterTransmit (uint32_t       addr,
   i2c->ctrl->status.arbitration_lost = 0;
   i2c->ctrl->status.bus_error        = 0;
   if (!i2c->ctrl->stalled) {
-    //i2c->reg->CONSET = I2C_CON_STA | i2c->ctrl->con_aa;
-	  //i2c->reg->C1 |= I2C_C1_MST_MASK;
-	  //i2c->reg->C1 &= ~I2C_C1_TXAK_MASK;	// enable ACK
 	  // jd: from KSDK
 	  /* Set direction to send for sending of address and data. */
 	  I2C_HAL_SetDirMode(i2c->reg, kI2CSend);
@@ -481,9 +464,6 @@ static int32_t I2Cx_MasterReceive (uint32_t       addr,
   /* Note that because we must always generate START or RE-START, the code for
      stalled and not stalled version is the same */
 
-	//i2c->reg->CONSET = I2C_CON_STA | i2c->ctrl->con_aa;
-	//i2c->reg->C1 |= I2C_C1_MST_MASK;
-	//i2c->reg->C1 &= ~I2C_C1_TXAK_MASK;	// enable ACK
 	I2C_HAL_SetDirMode(i2c->reg, kI2CSend); /* sending address */
 	I2C_HAL_SendStart(i2c->reg);
 	I2C_HAL_WriteByte(i2c->reg, i2c->ctrl->sla_rw); /* Send slave address */
@@ -610,23 +590,17 @@ static int32_t I2Cx_Control (uint32_t control, uint32_t arg, I2C_RESOURCES *i2c)
       val = (arg << 1) & 0xFF;
       if (arg & ARM_I2C_ADDRESS_GC) {
         /* General call enable */
-        //val |= 0x01;
-    	//i2c->reg->C2 |= I2C_C2_GCAEN_MASK;
     	I2C_HAL_SetGeneralCallCmd(i2c->reg, true);
       }
       else {
     	  // jd: added else to disable general call
-    	  //i2c->reg->C2  &= ~I2C_C2_GCAEN_MASK;
     	  I2C_HAL_SetGeneralCallCmd(i2c->reg, false);
       }
-      //i2c->reg->ADR0 = val;
+
       i2c->reg->A1 = val;		// jd: 7-bit address; same as on LPC18xx
 
 
       /* Enable assert acknowledge */
-      /*if (val) val = I2C_CON_AA;
-      i2c->ctrl->con_aa = val;
-      i2c->reg->CONSET  = val;*/
       if ( val )
     	  i2c->reg->C1 &= ~I2C_C1_TXAK_MASK;	// enable ACK
       // KSDK has only I2C_HAL_SendAck which does the same
@@ -657,9 +631,6 @@ static int32_t I2Cx_Control (uint32_t control, uint32_t arg, I2C_RESOURCES *i2c)
         default:
           return ARM_DRIVER_ERROR_UNSUPPORTED;
       }
-      /* Improve accuracy */
-      //i2c->reg->SCLH = clk / 2;
-      //i2c->reg->SCLL = clk - i2c->reg->SCLH;
       /* jd: MUL * ICR = BUS/Baud
        * clk is now BUS/Baud
        * ICR must fit 6 bits -> ICR < 63 (0x3F)
@@ -701,14 +672,8 @@ static int32_t I2Cx_Control (uint32_t control, uint32_t arg, I2C_RESOURCES *i2c)
       /* Slave:  enter non-addressed Slave mode */
       // jd: writing STO in master mode sends STOP signal to bus,
       // in slave mode it recovers from error condition.
-      //conset = I2C_CON_STO | i2c->ctrl->con_aa;
-      //i2c->reg->CONSET = conset;
-      //i2c->reg->CONCLR = conset ^ I2C_CON_FLAGS;
-      // jd: I2C_CON_FLAGS == (I2C_CON_AA | I2C_CON_SI | I2C_CON_STO | I2C_CON_STA)
-      //i2c->reg->C1 &= ~(I2C_C1_IICIE_MASK | I2C_C1_MST_MASK);	// TODO: I2C_CON_STA?
-      //i2c->reg->C1 |= I2C_C1_TXAK_MASK;		// == clearing I2C_CON_AA in LPC.
-      // new version:
       I2C_HAL_SendStop(i2c->reg);
+      I2C_HAL_SetIntCmd(i2c->reg, true);	/* disable interrupts */
       //NVIC_EnableIRQ (i2c->i2c_ev_irq);
       break;
 
@@ -755,7 +720,6 @@ static uint32_t I2Cx_MasterHandler (I2C_RESOURCES *i2c)
   	}
 
     /* ERROR: Arbitration lost */
-    /* LPC event: I2C_STAT_MA_ALOST */
   	if ( I2C_HAL_GetStatusFlag(i2c->reg, kI2CArbitrationLost) )	{
   	      i2c->ctrl->status.arbitration_lost = 1;
   	      i2c->ctrl->status.busy             = 0;
