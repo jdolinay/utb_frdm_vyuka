@@ -38,7 +38,8 @@
 #include "MKL25Z4.h"
 #include "RTE_Device.h"
 #include <stdio.h>
-#include "drv_lcd.h"
+#include "drv_lcd.h"		// ovladac displeje
+#include "drv_systick.h"	// pro delay_ms
 
 // Adresy obvodu na I2C sbernici
 #define I2C_ADR_RTC (0b1010000)
@@ -61,18 +62,10 @@ uint32_t MeasureTemperature(void);
 
 int main(void)
 {
-	uint8_t dataSend[4] = { 0 }; // data to send
-	uint8_t sendSize = 0;		 // number of bytes to send
-	uint8_t dataReceive[8];
 	uint32_t temperature, humidity;
 	ARM_I2C_STATUS status;
-	char buf[16];
+	char buffer[16];
 
-
-	// TODO: S timto funguje ok, kod v I2C driveru uz je a mel by
-	// fungovat, ale nefunguje :(
-	// 1. Povolime hodinovy signal pro port E
-	SIM->SCGC5 |= (SIM_SCGC5_PORTE_MASK);
 
     // Inicializace a konfigurace ovladace I2C
 	Driver_I2C1.Initialize(i2c0_event);
@@ -82,6 +75,9 @@ int main(void)
 	// Inicializace ovladace displeje
 	LCD_initialize();
 
+	// Inicializace ovladace pro cekani
+	SYSTICK_initialize();
+
 	// Mereni
 	while(1) {
 		humidity = MeasureHumidity();
@@ -89,11 +85,11 @@ int main(void)
 		delay();
 
 		LCD_clear();
-		sprintf(buf, "H: %d %%", humidity);
-		LCD_puts(buf);
-		sprintf(buf, "T: %d.%d C", temperature/10, temperature%10);
+		sprintf(buffer, "H: %d %%", humidity);
+		LCD_puts(buffer);
+		sprintf(buffer, "T: %d.%d C", temperature/10, temperature%10);
 		LCD_set_cursor(2,1);
-		LCD_puts(buf);
+		LCD_puts(buffer);
 	}
 
 
@@ -102,6 +98,10 @@ int main(void)
 }
 
 
+/*
+ * Zmeri vlhkost.
+ * Vraci vlhkost v procentech.
+ */
 uint32_t MeasureHumidity(void)
 {
 	uint8_t hih_measure_status;
@@ -114,8 +114,14 @@ uint32_t MeasureHumidity(void)
 		// Zahajime mereni poslanim slave adresy a R/W bitu 0 (prikaz write bez dat)
 		Driver_I2C1.MasterTransmit(I2C_ADR_HMDT_SENSOR, dataSend, 0, false);
 		status = Driver_I2C1.GetStatus();
-		delay();	// dame senzoru cas na mereni
-		// TODO: nahradit delay.
+		while (status.busy) {
+			status = Driver_I2C1.GetStatus();
+		}
+		// Senzoru trva 37 ms nez dokonci prevod.
+		// Muzeme take zjistovat status bity v prijatych datech, ale
+		// to je komplikovanejsi.
+		SYSTICK_delay_ms(40);
+
 
 		Driver_I2C1.MasterReceive(I2C_ADR_HMDT_SENSOR, dataReceive, 4, false);
 		// Cekame na prijem dat
@@ -132,13 +138,18 @@ uint32_t MeasureHumidity(void)
 
 }
 
-// cteni teploty z LM75A
-// Obvod ma "pointer" ktery urcuje, co chceme cist nebo zapisovat.
-// adresa 0 = teplota (2 B)
-// adresa 1 = config (1B)
-// a dalsi nepodstatne adresy :)
-// V config registru je defaultne hodnota 0 a ta vyhovuje pro mereni teploty. Presto se zda
-// nutne do nej zapsat nejprve tuto 0; nebo je to chyba driveru?
+/*
+ Cteni teploty z LM75A
+ Vraci teplotu ve stupnich x 10, napr. 205 znamena 20.5 C
+
+ Poznamky:
+ Obvod ma "pointer" ktery urcuje, co chceme cist nebo zapisovat.
+ adresa 0 = teplota (2 B)
+ adresa 1 = config (1B)
+ a dalsi nepodstatne adresy :)
+ V config registru je defaultne hodnota 0 a ta vyhovuje pro mereni teploty.
+ Presto se zda nutne do nej zapsat nejprve tuto 0.
+*/
 uint32_t MeasureTemperature(void)
 {
 	// Inicializacni prikaz pro teplotni senzor LM75
@@ -157,6 +168,7 @@ uint32_t MeasureTemperature(void)
 	while ( status.busy ) {
 		status = Driver_I2C1.GetStatus();
 	}
+
 
 #if 1
 	// Varianta a) - cteni teploty s poslanim pointer hodnoty

@@ -11,3 +11,5 @@
 #ignore settings files which are changed by KDS often
 **/*/.settings/*.*
 projects/*/.settings/language.settings.xml
+projects/uart/.settings/language.settings.xml
+projects/time_measure/.settings/language.settings.xml

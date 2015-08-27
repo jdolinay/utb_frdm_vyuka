@@ -41,6 +41,16 @@
 			<locationURI>PARENT-2-PROJECT_LOC/drivers/lcd/drv_lcd.h</locationURI>
 		</link>
 		<link>
+			<name>Sources/drv_systick.c</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/drivers/systick/drv_systick.c</locationURI>
+		</link>
+		<link>
+			<name>Sources/drv_systick.h</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/drivers/systick/drv_systick.h</locationURI>
+		</link>
+		<link>
 			<name>Sources/i2c_demo.c</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/programs/i2c_demo/i2c_demo.c</locationURI>
