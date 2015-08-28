@@ -1,0 +1,5 @@
+
+Soubor FreeRTOSConfig.h by mel byt zkopirovan do projektu, aby mohl mit projekt sve vlastni nastaveni.
+
+Cela slozka FreeRTOS se prida do projektu jako "link",
+(pretazenim z Pruzkumnika na projekt a volbou "Link to files and folders).
