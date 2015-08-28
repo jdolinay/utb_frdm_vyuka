@@ -91,39 +91,45 @@ int main(void)
 // Toto je proces (task) s nazvem Main (funkce MainTask)
 void MainTask( void* pvParameters )
 {
-  (void)pvParameters; /* parameter not used */
-  for(;;)
-  {
-    // Prepnuti stavu LED
-	RED_LED_TOGGLE();
+	(void) pvParameters; /* parameter not used */
 
-/*
-    Pozastaveni procesu na dany pocet tiku.
-	Pro vypocet doby pozastaveni v milisekundach se pouziva makro portTICK_RATE_MS
-	coz je asi 1/(pocet tiku za milisekundu)
-	POZOR: vTaskDelay se nedoporucuje ulohy, ktere maji byt spousteny
-	s presnou periodou, protoze doba pozastaveni je relativni - task je
-	pozastaven na dany pocet tiku od okamziku volani.
-	Pro presne periodicke casovani je doporucena vTaskDelayUntil.
-  */
 
 	//
 	// 1. varianta kodu: pozastaveni na danou dobu (nepresne)
 	//
-	vTaskDelay(1000/portTICK_RATE_MS);
+	for (;;) {
+		// Prepnuti stavu LED
+		RED_LED_TOGGLE();
+
+		// Pozastaveni procesu na dany pocet tiku.
+		// Pro vypocet doby pozastaveni v milisekundach se pouziva makro portTICK_RATE_MS
+		// coz je asi 1/(pocet tiku za milisekundu)
+		// POZOR: vTaskDelay se nedoporucuje ulohy, ktere maji byt spousteny
+		// s presnou periodou, protoze doba pozastaveni je relativni - task je
+		// pozastaven na dany pocet tiku od okamziku volani.
+		// Pro presne periodicke casovani je doporucena vTaskDelayUntil.
+		vTaskDelay(1000 / portTICK_RATE_MS);
+	}
+
 
 	//
 	// 2. varianta kodu: zajisteni spousteni kodu v presnych intervalech
 	//
 	/*
-    TickType_t xLastWakeTime;
-    const TickType_t xFrequency = 500/portTICK_RATE_MS;
+	const TickType_t xFrequency = 500 / portTICK_RATE_MS;
+	TickType_t xLastWakeTime;
 
-    // Initialise the xLastWakeTime variable with the current time.
-    xLastWakeTime = xTaskGetTickCount();
-    vTaskDelayUntil( &xLastWakeTime, xFrequency );
-    */
-  }
+  	// Initialise the xLastWakeTime variable with the current time.
+	xLastWakeTime = xTaskGetTickCount();
+	for (;;) {
+
+		// Prepnuti stavu LED
+		RED_LED_TOGGLE();
+
+		// Postaveni do doby dalsiho spusteni s konstantni periodou
+		vTaskDelayUntil(&xLastWakeTime, xFrequency);
+	}*/
+
 }
 
 
