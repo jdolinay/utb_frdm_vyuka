@@ -40,7 +40,18 @@
 
 #include "MKL25Z4.h"
 #include "FreeRTOS.h"
+#include "semphr.h"		// FreeRTOS semafory a mutexy
 #include "drv_lcd.h"
+
+/*
+ * Definujte tuto konstantu jako 1, pokud maji procesy pouzit
+ * mutex pro zajisteni vzajemneho vylouceni pri praci s promennou
+ * G_SdilenaData.
+ *
+ * 0 - nesynchronizovany pristup; dochazi k chybam ve vypisu na displej
+ * 1 - pristup rizeny mutexem; nedochazi k chybam ve vypisu
+ */
+#define	 SYNCHRON_POUZIT_MUTEX	0
 
 
 // Prototypy funkci
@@ -52,13 +63,29 @@ char* slowstrcpy(char* buff, const char* src);
 // a cte z ni druhy proces.
 char G_SdilenaData[20] = "0000.000";
 
-
+// Podminena cast kodu; provede se jen pro nenulovou hodnotu makra
+#if (SYNCHRON_POUZIT_MUTEX)
+// Semafor pouzity pro synchronizaci
+SemaphoreHandle_t G_Mutex = NULL;
+#endif
 
 int main(void) {
 	// Inicializace displeje
 	LCD_initialize();
 
 	LCD_puts("Spoustim procesy...");
+
+#if (SYNCHRON_POUZIT_MUTEX)
+	// vytvoreni semaforu
+	G_Mutex = xSemaphoreCreateMutex();	//xSemaphoreCreateBinary();
+	if ( G_Mutex == NULL ) {
+		while(1)
+			;		// chyba: nedostatek pameti
+	}
+
+	// Semafor je vytvoren "prazdny", musime jej "dat" operacnimu systemu
+	xSemaphoreGive(G_Mutex);
+#endif
 
 	// Vytvoreni ulohy 1 - zapis
 	xTaskCreate(TaskWriter, /* ukazatel na task */
@@ -102,12 +129,24 @@ void TaskWriter( void * pvParameters )
 		// Zapis se provadi kazdych n ms
 		vTaskDelay(400 / portTICK_RATE_MS);
 
+
+#if (SYNCHRON_POUZIT_MUTEX)
+		// Pozadame RTOS o mutex. Cekame nekonecne dlouho.
+		// xSemaphoreTake vraci pdTRUE pokud ziska semafor; pdFALSE pokud vyprsi cas
+		xSemaphoreTake(G_Mutex, portMAX_DELAY);
+#endif
+
 		// Zapisujeme nejakou hodnotu do sdilene promenne.
 		// stridave se zapisuje rada jednicek 111... a rada devitek 999...
 		if ( (n % 2) == 0 )
 			slowstrcpy(G_SdilenaData, "1111.111");
 		else
 			slowstrcpy(G_SdilenaData, "9999.999");
+
+#if (SYNCHRON_POUZIT_MUTEX)
+		xSemaphoreGive(G_Mutex);
+#endif
+
 		n++;
 	}
 }
@@ -123,9 +162,20 @@ void TaskReader( void * pvParameters )
 		// Akce se provadi kazdych 600 ms
 		vTaskDelay(600 / portTICK_RATE_MS);
 
+#if (SYNCHRON_POUZIT_MUTEX)
+		// Pozadame RTOS o mutex. Cekame nekonecne dlouho.
+		// xSemaphoreTake vraci pdTRUE pokud ziska semafor; pdFALSE pokud vyprsi cas
+		xSemaphoreTake(G_Mutex, portMAX_DELAY);
+#endif
+
 		// Zobrazime sdilena data na displeji
 		LCD_clear();
 		LCD_puts(G_SdilenaData);
+
+#if (SYNCHRON_POUZIT_MUTEX)
+		// Vracime mutex operacnimu systemu
+		xSemaphoreGive(G_Mutex);
+#endif
 	}
 }
 
