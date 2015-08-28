@@ -2,6 +2,10 @@
  * Ukazkovy program pro Programovani mikropocitacu
  * Operacni system FreeRTOS, synchronizace uloh pri
  * pristupu ke sdilene promenne.
+ * Program vypisuje na displej kitu stridave radu jednicek a radu devitek
+ * z globalni promenne. Pokud neni pristup k teto promenne chranen mutexem,
+ * dochazi ve vypisu k chybam.
+ *
  *
  * Jak pridat FreeRTOS do projektu:
  * 1) Pridat do projektu soubor FreeRTOSConfig.h z FreeRTOS/include/.
