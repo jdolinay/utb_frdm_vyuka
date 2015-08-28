@@ -53,7 +53,16 @@
 #include "FreeRTOS.h"
 #include "semphr.h"		// FreeRTOS semafory a mutexy
 #include "drv_lcd.h"
+#include "drv_gpio.h"
+#include <stdio.h>	// sprintf
 
+///////////////////////////////////////////////
+// Interni kod bankovniho systemu od firmy
+// TENTO KOD NESMITE MENIT
+int NactiUcet( void );
+void ZapisUcet( int castka );
+int g_Ucet = 0;
+////////////////////////////////////////////////////
 
 // Prototypy funkci pro procesy (tasky)
 void prikazy( void * pvParameters );
@@ -63,14 +72,20 @@ void vklad( void * pvParameters );
 // Dalsi funkce
 int BankaOperace(int castka);
 void VypisVysledek(void);
+
 uint8_t VkladBezi, VyberBezi;
 int nVyberu, nVkladu;
 char buff[20];
+
+TaskHandle_t TaskVyber = NULL;
+TaskHandle_t TaskVklad = NULL;
 
 int main(void) {
 
 	// Inicializace displeje
 	LCD_initialize();
+
+	GPIO_Initialize();
 
 	// Pocatecni stav uctu
 	BankaOperace(10000);
@@ -85,7 +100,7 @@ int main(void) {
 			"GUI", /* jmeno tasku pro ladeni - kernel awareness debugging */
 			configMINIMAL_STACK_SIZE, /* velikost zasobniku = task stack size */
 			(void*)NULL, /* pripadny parametr pro task = optional task startup argument */
-			tskIDLE_PRIORITY + 3, /* priorita tasku */
+			tskIDLE_PRIORITY + 1, /* priorita tasku, nizsi nez ostatnich */
 			(xTaskHandle*)NULL /* pripadne handle na task, pokud ma byt vytvoreno */
 		);
 
@@ -95,7 +110,7 @@ int main(void) {
 			configMINIMAL_STACK_SIZE, /* velikost zasobniku = task stack size */
 			(void*)NULL, /* pripadny parametr pro task = optional task startup argument */
 			tskIDLE_PRIORITY + 2, /* priorita tasku, vyssi nez u tasku 1 */
-			(xTaskHandle*)NULL /* pripadne handle na task, pokud ma byt vytvoreno */
+			&TaskVklad /* pripadne handle na task, pokud ma byt vytvoreno */
 		);
 
 	// Vytvoreni ulohy 2 - vyber
@@ -103,9 +118,13 @@ int main(void) {
 				"vyber", /* jmeno tasku pro ladeni - kernel awareness debugging */
 				configMINIMAL_STACK_SIZE, /* velikost zasobniku = task stack size */
 				(void*)NULL, /* pripadny parametr pro task = optional task startup argument */
-				tskIDLE_PRIORITY + 1, /* priorita tasku, vyssi nez u tasku 1 */
-				(xTaskHandle*)NULL /* pripadne handle na task, pokud ma byt vytvoreno */
+				tskIDLE_PRIORITY + 3, /* priorita tasku, vyssi nez u tasku 1 */
+				&TaskVyber /* pripadne handle na task, pokud ma byt vytvoreno */
 			);
+
+	// Pozastavime tasky
+	vTaskSuspend(TaskVklad);
+	vTaskSuspend(TaskVyber);
 
 	// Spusteni jadra FreeRTOS
 	vTaskStartScheduler(); /* does not return */
@@ -119,62 +138,49 @@ int main(void) {
 }
 
 // proces zajistujici zpracovani prikazu od uzivatele
-// Bezi v nekonecne smycce a testuje zda byla stisknuta klavesa
-// Pokud ano, provede prislusnou akci
-void prikazy( void * pvParameters )
+// Bezi v nekonecne smycce a testuje zda bylo stisknuto tlacitko.
+// Pokud ano, provede prislusnou akci.
+void prikazy(void * pvParameters)
 {
 	int n = 0;
 	(void) pvParameters; /* parameter not used */
 
-	for( ;; ) {
+	while (1) {
 
-		// Zapis se provadi kazdych n ms
-		vTaskDelay(400 / portTICK_RATE_MS);
+		LCD_clear();
+		LCD_puts("Na uctu:");
+		sprintf(buff, "%d", BankaOperace(0));
+		LCD_puts(buff);
+		LCD_set_cursor(2, 1);
+		LCD_puts("SW1=START");
 
+		// cekani na tlacitko
+		while (pinRead(SW1) != 0) {
+			;
+		}
 
-	}
+		VkladBezi = 1;
+		VyberBezi = 1;
 
-	int sluzba;
+		// Spustime procesy simulujici vklad a vyber...
+		vTaskResume(TaskVklad);
+		vTaskResume(TaskVyber);
 
-while(1) {
+		while (VkladBezi || VyberBezi) {
+			;
+		}
 
-	LCD_clear();
-	LCD_puts("Na uctu:");
-	sprintf(buff, "%d", BankaOperace(0) );
-	LCD_puts(buff);
-	setcursor(2,1);
-	LCD_puts("SW4=START");
-	vTaskDelay(2000 / portTICK_RATE_MS);
-	// TODO: cekani na tlacitko...
-	while ( PTAD_PTAD7 != 0 )
-	  __RESET_WATCHDOG();
-
-
-
-	VkladBezi = 1;
-	VyberBezi = 1;
-
-	// spustime procesy simulujici vklad a vyber...
-	// TODO: jak spustit...
-	rtm_start_p (proces_2_id, 0, 14);
-	rtm_start_p (proces_3_id, 0, 17);
-
-
-	while(VkladBezi || VyberBezi)
-	{
-	  /*if ( PTAD_PTAD7 == 0 )
-	  {
-				rtm_continue_p(init_id);
-				break;
-		} */
-	}	// while
 		// Po zastaveni procesu vkladu i vyberu pokracujeme zde..
-	// umoznime opakovat simulaci
-	VypisVysledek();
-	ZapisUcet(10000);   // nastavit konto na pocatecni castku
-	nVyberu = nVkladu = 0;
-	while ( PTAD_PTAD7 != 0 )
-	  __RESET_WATCHDOG();
+		// a umoznime opakovat simulaci
+		VypisVysledek();
+		ZapisUcet(10000);   // nastavit konto na pocatecni castku
+		nVyberu = 0;
+		nVkladu = 0;
+		// cekani na tlacitko
+		while (pinRead(SW1) != 0) {
+			;
+		}
+	}
 }
 
 /* Toto je uloha (task, proces) s nazvem TaskReader (funkce TaskReader)
@@ -193,8 +199,8 @@ void vklad( void * pvParameters )
 		nVkladu++;
 		if ( nVkladu >= 5 )
 		{
-			//TODO: rtm_ch_period_p(proces_2_id, 0);
 			VyberBezi = 0;
+			vTaskSuspend(TaskVklad);
 		}
 
 		// Akce se provadi kazdych 600 ms
@@ -215,17 +221,15 @@ void vyber( void * pvParameters )
 		nVyberu++;
 		// Po 5-ti probìhnutích se ukonèíme
 		if (nVyberu >= 5) {
-			// TODO: rtm_ch_period_p(proces_3_id, 0);
 			VkladBezi = 0;
+			vTaskSuspend(TaskVyber);
 		}
 
 		// Akce se provadi kazdych 900 ms
 		vTaskDelay(900 / portTICK_RATE_MS);
 	}
 
-
 }
-
 
 //
 // BankaOperace
@@ -249,6 +253,26 @@ int BankaOperace(int castka)
 	}
 
 	return sum;
+}
+
+void VypisVysledek(void) {
+ 	LCD_clear();
+	LCD_puts("zustatek=");
+	sprintf(buff, "%d", BankaOperace(0) );
+	LCD_puts(buff);
+	LCD_set_cursor(2,1);
+	if ( BankaOperace(0)  != 12500 )
+	{
+		if ( BankaOperace(0) < 12500 )
+			LCD_puts("Zaknik podveden!");
+			//Reditel banky vas mozna pochvali ale jen nez si zakaznik bude stezovat...
+		else
+			LCD_puts("Banka ztratila $");
+			//dostal jste vypoved...;
+	}
+	else
+		LCD_puts("GRATULACE, ok!");
+
 }
 
 

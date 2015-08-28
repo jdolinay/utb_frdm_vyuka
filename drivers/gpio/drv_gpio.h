@@ -72,7 +72,7 @@ typedef enum _utb_frdm_pin_modes
   * @return none
   * @note It will enable the clock for the ports as required.
   */
-void GPIO_initialize(void);
+void GPIO_Initialize(void);
 
 /**
   * @brief Configure given pin to behave as input or output.
