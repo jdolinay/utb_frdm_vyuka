@@ -17,6 +17,7 @@ Cilem je usnadneni prohlizeni zdrojovych kodu a jejich exportu pro dokumentaci, 
 		/drivers/[nazev driveru]. 
         V Includes (cestach) pro kompilator musi byt cesta k prislusnemu vladaci, 
         napr. "../../../drivers/gpio"
+- /testing - experimentalni projekty pro overovani novych feci atd.
 
 Priklad:
 Projekt blink_busy - ukazka blikani LED s vyuzitim jednoduche cekaci smycky.
