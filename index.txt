@@ -2,5 +2,5 @@
 
 Programy pro vyuku Programovani mikropocitacu.
 
-Organizace slozek viz pravidla.txt
+Organizace slozek viz ctime.txt
 
