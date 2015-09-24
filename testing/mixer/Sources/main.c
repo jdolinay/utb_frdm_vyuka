@@ -1,5 +1,5 @@
 /*
- * Projekt pro testovani modelu Pracka EDU MOD
+ * Projekt pro testovani modelu Misici jednotky EDU MOD
 */
 
 #include "MKL25Z4.h"
@@ -60,6 +60,12 @@ int main(void) {
 
 	// 3. Nastavime prislusne piny jako vystupy a vstupy
 	// vystupy
+	SV1_OFF();
+	SV2_OFF();
+	SV3_OFF();
+	SV4_OFF();
+	SV5_OFF();
+	MICHADLO_OFF();
 	PTE->PDDR |= (1 << 0);
 	PTE->PDDR |= (1 << 1);
 	PTE->PDDR |= (1 << 4);

@@ -58,6 +58,13 @@ int main(void)
 
 	// 3. Nastavime prislusne piny jako vystupy a vstupy
 	// vystupy
+	VODA_OFF();
+	TOP_OFF();
+	OTACKY_OFF();
+	BUBEN_VLEVO_OFF();
+	BUBEN_VPRAVO_OFF();
+	CERPADLO_OFF();
+
 	PTE->PDDR |= (1 << 0);
 	PTE->PDDR |= (1 << 1);
 	PTE->PDDR |= (1 << 4);
@@ -73,59 +80,79 @@ int main(void)
 	PTC->PDDR &= ~(1 << 6);
 	PTC->PDDR &= ~(1 << 5);
 
-
-	// Test vstupu a vystupu
-	VODA_ON();
-	while ( !IS_HLADINA_100() )
-		;
-	VODA_OFF();
-
-	// Topit opstupne na jednotlive teploty s malou pauzou
-	TOP_ON();
-	while (!IS_TEPLOTA_30() )
-		;
-	TOP_OFF();
-	delay();
-
-	TOP_ON();
-	while (!IS_TEPLOTA_40() )
-		;
-	TOP_OFF();
-	delay();
-
-	TOP_ON();
-	while (!IS_TEPLOTA_60() )
-		;
-	TOP_OFF();
-	delay();
-
-	TOP_ON();
-	while (!IS_TEPLOTA_90() )
-		;
-	TOP_OFF();
-	delay();
-
-	// vypustit vodu s pauzou po 100 a 50%
-	CERPADLO_ON();
-	while ( IS_HLADINA_100() )
-		;
-	CERPADLO_OFF();
-	delay();
-
-	CERPADLO_ON();
-	while ( IS_HLADINA_50() )
+	// Test funkce modelu
+	while (1) {
+		// Test vstupu a vystupu
+		VODA_ON();
+		while (!IS_HLADINA_100())
 			;
-	CERPADLO_OFF();
-	delay();
-	CERPADLO_ON();
-	delay();
-	delay();
-	CERPADLO_OFF();
+		VODA_OFF();
 
-	while(1)
-		;
+		// Topit postupne na jednotlive teploty s malou pauzou
+		TOP_ON();
+		while (!IS_TEPLOTA_30())
+			;
+		TOP_OFF();
+		delay();
 
+		TOP_ON();
+		while (!IS_TEPLOTA_40())
+			;
+		TOP_OFF();
+		delay();
 
+		TOP_ON();
+		while (!IS_TEPLOTA_60())
+			;
+		TOP_OFF();
+		delay();
+
+		TOP_ON();
+		while (!IS_TEPLOTA_90())
+			;
+		TOP_OFF();
+		delay();
+
+		// tocit bubnem
+		delay();
+		BUBEN_VPRAVO_ON();
+		delay();
+		OTACKY_ON();
+		delay();
+		OTACKY_OFF();
+		delay();
+		BUBEN_VPRAVO_OFF();
+		delay();
+		BUBEN_VLEVO_ON();
+		delay();
+		BUBEN_VLEVO_OFF();
+		delay();
+		delay();
+
+		// vypustit vodu s pauzou po 100 a 50%
+		CERPADLO_ON();
+		while ( IS_HLADINA_100())
+			;
+		CERPADLO_OFF();
+		delay();
+
+		CERPADLO_ON();
+		while ( IS_HLADINA_50())
+			;
+		CERPADLO_OFF();
+		delay();
+		CERPADLO_ON();
+		delay();
+		delay();
+		CERPADLO_OFF();
+
+		// cekat na vychladnuti
+		while (IS_TEPLOTA_30() )
+			;
+		delay();
+	}
+
+	// Test 2 - nepouzit pokud je pouzit test vyse...
 	// Testujeme vsechny vystupy...
 	while (1) {
 		VODA_ON();
