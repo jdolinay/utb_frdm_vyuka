@@ -8,7 +8,7 @@ Cilem je usnadneni prohlizeni zdrojovych kodu a jejich exportu pro dokumentaci, 
 - /doc	    - dokumentace	
 - /drivers  - jednoduché ovladače periferii, napr. UART, displej.... Kazdy ve vlastni slozce!
 - /FreeRTOS - zdrojovy kod FreeRTOS portu pro MKL25Z	
-- /KSDK     - soubory převzaté z Kinetis SDK, jde o nízkoúrovňové funkce (HAL) využívané v CMSIS ovladačích.
+- /KSDK     - soubory prevzate z Kinetis SDK, jde o nizkourovnove funkce (HAL) vyuzivane v CMSIS ovladacich.
 - /programs - zdrojove kody ukázkových programl ve slozkach podle nazvu projektu.
 - /projects - obsahuje kompletni projekty IDE (KDS 3.0.0). 
 		Tyto projekty ale obsahuji pouze link na zdrojovy kod v /programs.
