@@ -46,7 +46,7 @@ int main(void)
     bool commandReady;
 
 	// Inicializace serioveho rozhrani UART
-	UART0_initialize(BD9600);
+	UART0_Initialize(BD9600);
 
 	while (1) {
 		// Cekame na prichod znaku

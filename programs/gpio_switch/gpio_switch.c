@@ -46,7 +46,7 @@ int main(void)
 	int sw_state;
 
 	// inicializace ovladace GPIO
-	GPIO_initialize();
+	GPIO_Initialize();
 
 	// inicializace pinu pro tlacitko
 	switch1_init();

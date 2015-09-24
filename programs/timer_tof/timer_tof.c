@@ -21,7 +21,7 @@ int main(void)
 	uint32_t counter;
 
 	// Pro ovladani LED pouzijeme ovladac GPIO
-	GPIO_initialize();
+	GPIO_Initialize();
 	pinMode(LD1, OUTPUT);
 	pinWrite(LD1, HIGH);
 

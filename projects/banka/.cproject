@@ -50,8 +50,8 @@
 									<listOptionValue builtIn="false" value="&quot;../../../drivers/lcd&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;../../../drivers/gpio&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/FreeRTOS/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/freeRTOS/FreeRTOS/port}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/freeRTOS/FreeRTOS/src}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/FreeRTOS/port}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/FreeRTOS/src}&quot;"/>
 								</option>
 								<inputType id="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.input.1397414793" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.input"/>
 							</tool>

@@ -35,7 +35,7 @@ int main(void)
 	// vyuzito v delay_ms
 	SysTick_Config(SystemCoreClock / 1000u );
 
-	UART0_initialize(BD9600);
+	UART0_Initialize(BD9600);
 
 	while ( 1 )
 	{

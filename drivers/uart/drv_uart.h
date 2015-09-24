@@ -90,29 +90,7 @@ typedef enum _uart0_baudrates
 /*
  * Initialize UART0
  */
-void UART0_initialize(UART0_baudrate baudrate) {
-	/* Enable clock for PORTA needed for Tx, Rx pins */
-	SIM->SCGC5 |= SIM_SCGC5_PORTA_MASK;
-	/* Enable the UART_RXD function on PTA1 */
-	PORTA->PCR[1] = PORT_PCR_MUX(2);
-	/* Enable the UART_TXD function on PTA2 */
-	PORTA->PCR[2] = PORT_PCR_MUX(2);
-	/* set clock for UART0 */
-	SIM->SOPT2 |= SIM_SOPT2_UART0SRC(MSF_UART0_CLKSEL);
-	SIM->SCGC4 |= SIM_SCGC4_UART0_MASK;
-	/* Disable UART0 before changing registers */
-	/* uart->reg->C2 &= ~(UART0_C2_TE_MASK | UART0_C2_RE_MASK); */
-	UART0->C2 = 0;
-	UART0->C1 = 0;
-	UART0->C3 = 0;
-	UART0->BDH = 0;
-	/* changes C4 and C5 to default values + sets baudrate preserving the other bits in BDH*/
-	f_UART0_SetBaudrate(baudrate);
-	/* Clear Receiver overrun flag, just in case */
-	UART0->S1 |= UART0_S1_OR_MASK;
-	/* Enable receiver and transmitter */
-	UART0->C2 |= (UART0_C2_TE_MASK | UART0_C2_RE_MASK);
-}
+void UART0_Initialize(UART0_baudrate baudrate);
 
 /**
   * @brief Write 1 byte to UART

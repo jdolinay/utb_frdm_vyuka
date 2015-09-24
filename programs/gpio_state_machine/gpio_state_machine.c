@@ -22,7 +22,7 @@ LED_state stav_led = LED_VYPNUTA;
 int main(void)
 {
 
-	GPIO_initialize();
+	GPIO_Initialize();
 
 	// Nastavit pin pro LED jako vystup
 	pinMode(LD3, OUTPUT);

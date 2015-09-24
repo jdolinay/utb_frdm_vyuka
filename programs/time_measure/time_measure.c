@@ -30,7 +30,7 @@ int main(void)
 	PTB->PDDR |= (1 << LED_PIN);
 	*/
 
-	UART0_initialize(BD9600);	// BD115200
+	UART0_Initialize(BD9600);	// BD115200
 	SYSTICK_initialize();
 
 	while ( 1 )
