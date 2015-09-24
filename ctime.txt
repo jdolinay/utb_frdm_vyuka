@@ -1,15 +1,15 @@
 utb_frdm_vyuka
-Sada programù pro vıuku s kitem FRDM-KL25Z
+Sada programÅ¯ pro vÃ½uku s kitem FRDM-KL25Z
 
 Usporadani:
 Cilem je usnadneni prohlizeni zdrojovych kodu a jejich exportu pro dokumentaci, pripadne i snazsi podpora vice IDE.
-- /CMSIS_Driver - ovladaèe podle ARM CMSIS standardu
-    - Config - konfiguraèní soubor ovladaèù CMSIS
-- /doc	    - dokumentace.	
-- /drivers  - jednoduché ovladaèe periferii, napr. UART, displej.... Kazdy ve vlastni slozce!
+- /CMSIS_Driver - ovladaÄe podle ARM CMSIS standardu
+    - Config - konfiguraÄnÃ­ soubor ovladaÄÅ¯ CMSIS
+- /doc	    - dokumentace	
+- /drivers  - jednoduchÃ© ovladaÄe periferii, napr. UART, displej.... Kazdy ve vlastni slozce!
 - /FreeRTOS - zdrojovy kod FreeRTOS portu pro MKL25Z	
-- /KSDK     - soubory pøevzaté z Kinetis SDK, jde o nízkoúrovòové funkce (HAL) vyuívané v CMSIS ovladaèích.
-- /programs - zdrojove kody ukázkovıch programl ve slozkach podle nazvu projektu.
+- /KSDK     - soubory pÅ™evzatÃ© z Kinetis SDK, jde o nÃ­zkoÃºrovÅˆovÃ© funkce (HAL) vyuÅ¾Ã­vanÃ© v CMSIS ovladaÄÃ­ch.
+- /programs - zdrojove kody ukÃ¡zkovÃ½ch programl ve slozkach podle nazvu projektu.
 - /projects - obsahuje kompletni projekty IDE (KDS 3.0.0). 
 		Tyto projekty ale obsahuji pouze link na zdrojovy kod v /programs.
 		Nazev hlavniho zdrojoveho kodu (main) v /programs je stejny jako nazev projektu.
