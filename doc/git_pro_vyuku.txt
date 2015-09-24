@@ -1,0 +1,127 @@
+
+Ziskani repository ze serveru (klonovani):
+------------------------------------------
+
+Vybrat slozku, ve ktere pak vznikne podslozka utb_frdm_vyuka
+
+Prave tlacitko - Git Bash Here
+
+Na prikazovy radek zadat:
+
+git clone https://github.com/jdolinay/utb_frdm_vyuka.git
+
+
+Aktualizace zmenami na serveru:
+-------------------------------
+
+Vybrat primo slozku repository (utb-frdm_vyuka)
+
+Prave tlacitko - Git Bash Here
+
+V okne prikazoveho radku by melo byt neco jako:
+uzivatel@pocitac /d/dolinay/2015/git/utb_frdm_vyuka (master)
+
+Zadat prikaz:
+
+git pull
+
+
+
+Pouziti GIT lokalne, pro verzovani sve prace:
+---------------------------------------------
+
+1. vytvorit repository
+-----------------------
+Vybrat slozku, ve ktere bude repository, napr. .../novak/git/a5mpc
+Primo tato slozka "a5mpc" se stane repository, nebude v ni jeste podslozka!
+
+Prave tlacitko - Git Bash Here
+
+V prikazovem radku zadat:
+
+git init
+
+Initialized empty Git repository in [vase cesta]
+
+
+2) Nastaveni jmena a emailu uzivatele 
+--------------------------------
+POZOR: provedeme jen pro aktualni repository pokud je pocitac sdílen více studenty!
+
+git config user.email mujmail@nejakymail.cz
+git config user.name Tomas Jedno
+
+
+3) pridani souborù do repository a záznam zmìn (commit)
+-------------------------------------------------------
+Vytvorit soubory/projekty v repository
+
+Zkontrolovat stav repository:
+
+git status
+
+Git vypise informace o souborech které jsou už v repository (tracked) a které ne.
+Soubory, které jsme ještì nepøidali do GIT jsou vypsány jako "Untracked files"
+
+Pøidat všechny soubory do repository (všimnìte si mezery a teèky za slovem add):
+
+git add .
+
+Git vypíše nové soubory jako: "Changes to be committed", new file: ...
+
+
+Provedeme zaznamenání aktuálního stavu souborù do repository (commit):
+
+git commit -m "zprava napr. co se zmenilo apod"
+
+POZOR: zprava musi byt v uvozovkach.
+
+
+
+Commit zmìn do repository (zaznamenání zmìn):
+----------------------------------------------
+POkud udìláme zmìny v existujících souborech,
+zaznamenáme je stejnì jako u nových souborù pøíkazy
+
+git add a git commit, viz výše.
+
+nebo mùžeme zkrácenì pøíkazem:
+
+git commit -a -m "pridan komentar"
+
+
+Zobrazení historie commitù
+-----------------------------
+
+git log
+
+
+Získání pøedchozí verze souborù = checkout
+------------------------------------------
+Tímto se v naší složce "pøepneme" do stavu v jakém byla v okamžiku daného commit.
+Pro identifikaci commitu používá Git tzv. SH1 hash.
+Ve výpisu git log je to napø. "commit b211a..."
+
+Nemusíme zadávat celý hash, staèí zaèátek, pokud je jedineèný, napø. 4 znaky
+
+Pøíklad:
+git checkout b211
+
+
+Poznámka: Toto je vhodné pro prohlížení pøedchozích verzí a pokusné zmìny.
+Pøi bìžné práci je vhodné používat vìtve (branch), tj. zmìny v kódu dìlat 
+v jiné vìtvy (na branchi) a po jejich ovìøení je slouèit (merge) s hlavní vìtví master.
+
+
+Zobrazení v grafickem prostøedí
+-------------------------------
+gitk --all
+
+Je možné použít i rùzná grafická prostøedí pro git, napø. git extensions.
+
+
+
+
+
+
+
