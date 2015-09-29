@@ -1,8 +1,9 @@
 /*
- * Ukazkovy program pro Programovani mikropocitacu
+ * Ukazkovy program pro Programovani mikropocitacu 
  * Ovladani LED pomoci tlacitek s vyuzitim "vysokourovnovych" funkci
  * jako pinWrite a pinRead.
    Tyto funkce jsou obsazeny v ovladaci drv_gpio.
+   Stiskem SW1 se rozsviti LED LD1, stiskem SW2 se zhasne.
  *
  *
  * Mame k dispozici 4 tlacitka SW1 az SW4 na pinech:

@@ -1,6 +1,6 @@
 /*
  * Ukazkovy program pro Programovani mikropocitacu
- * Blikani LED.
+ * Blikani LED LD1.
  * Vyuziva se "vysokourovnovych" funkci jako pinWrite a pinRead.
  *  Tyto funkce jsou obsazeny v ovladaci drv_gpio.
  *
