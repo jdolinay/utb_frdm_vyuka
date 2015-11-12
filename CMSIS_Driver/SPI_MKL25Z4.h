@@ -11,11 +11,17 @@
 
 #include "Driver_SPI.h"
 
+/* SPI Driver state flags */
+#define SPI_FLAG_INIT       (1 << 0)        // Driver initialized
+#define SPI_FLAG_POWER      (1 << 1)        // Driver power on
+//#define SPI_FLAG_SETUP      (1 << 2)        // SPI configured, clock set
+
 
 /* SPI Control Information */
 typedef struct {
 	ARM_SPI_SignalEvent_t cb_event;           // Event callback
 	ARM_SPI_STATUS        status;             // Status flags
+	uint8_t               flags;              // Control and state flags
 } SPI_CTRL;
 
 /* SPI Resource Configuration */

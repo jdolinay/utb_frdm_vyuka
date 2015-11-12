@@ -106,6 +106,16 @@ static ARM_SPI_CAPABILITIES SPI_GetCapabilities(void) {
   \note			It enables the clock in SIM for the ports of the pin used by the driver.
 */
 static int32_t SPIx_Initialize(ARM_SPI_SignalEvent_t cb_event, SPI_RESOURCES *spi) {
+	if (spi->ctrl->flags & SPI_FLAG_POWER) {
+		/* Driver initialize not allowed */
+		return ARM_DRIVER_ERROR;
+	}
+	if (spi->ctrl->flags & SPI_FLAG_INIT) {
+		/* Driver already initialized */
+		return ARM_DRIVER_OK;
+	}
+	spi->ctrl->flags = SPI_FLAG_INIT;
+
 	/* Register driver callback function */
 	spi->ctrl->cb_event = cb_event;
 
@@ -140,6 +150,16 @@ static int32_t SPIx_Initialize(ARM_SPI_SignalEvent_t cb_event, SPI_RESOURCES *sp
   \return      \ref execution_status
 */
 int32_t SPIx_Uninitialize(SPI_RESOURCES *spi) {
+
+	/* Unconfigure SCL and SDA pins */
+	  if (spi->reg == SPI0) {
+		  PINS_PinConfigure(RTE_SPI0_MISO_PIN, 0);
+		  PINS_PinConfigure(RTE_SPI0_MOSI_PIN, 0);
+		  PINS_PinConfigure(RTE_SPI0_SCK_PIN, 0);
+	   }
+	   else if (i2c->reg == I2C1) {
+
+	   }
 	return ARM_DRIVER_OK;
 }
 
@@ -150,22 +170,79 @@ int32_t SPIx_Uninitialize(SPI_RESOURCES *spi) {
   \param[in]   i2c    Pointer to SPI resources
   \return      \ref execution_status
 */
-int32_t SPIx_PowerControl(ARM_POWER_STATE state, SPI_RESOURCES *spi)
-{
-    switch (state)
-    {
-    case ARM_POWER_OFF:
-        break;
+int32_t SPIx_PowerControl(ARM_POWER_STATE state, SPI_RESOURCES *spi) {
+	if (!(spi->ctrl->flags & SPI_FLAG_INIT)) {
+		/* Driver not initialized */
+		return ARM_DRIVER_ERROR;
+	}
 
-    case ARM_POWER_LOW:
-        break;
+	switch (state) {
+	case ARM_POWER_OFF:
+		if (!(spi->ctrl->flags & SPI_FLAG_POWER)) {
+			/* Driver not powered */
+			break;
+		}
+		if (spi->ctrl->status.busy) {
+			/* Transfer operation in progress */
+			return ARM_DRIVER_ERROR_BUSY;
+		}
+		spi->ctrl->flags = SPI_FLAG_INIT;
+		/* Disable SPI interrupts */
+		NVIC_DisableIRQ(spi->spi_ev_irq);
 
-    case ARM_POWER_FULL:
-        break;
+		//SPI_HAL_SetIntCmd(i2c->reg, false); /* jd: disable interrupts in i2c module*/
 
-    default:
-        return ARM_DRIVER_ERROR_UNSUPPORTED;
-    }
+		/* Disable I2C Operation */
+		/* Use Kinetis SDK HAL */
+		SPI_HAL_Disable(spi->reg);
+
+		/* Disable I2C peripheral clock */
+		if (spi->reg == SPI0) {
+			*spi->pclk_cfg_reg &= ~SIM_SCGC4_SPI0_MASK;
+		} else if (spi->reg == SPI1) {
+			*spi->pclk_cfg_reg &= ~SIM_SCGC4_SPI1_MASK;
+		}
+		break;
+
+	case ARM_POWER_LOW:
+		return ARM_DRIVER_ERROR_UNSUPPORTED;
+		break;
+
+	case ARM_POWER_FULL:
+		if (spi->ctrl->flags & SPI_FLAG_POWER) {
+			/* Driver already powered */
+			break;
+		}
+
+		/* Enable I2C peripheral clock */
+		if (spi->reg == SPI0) {
+			*spi->pclk_cfg_reg |= SIM_SCGC4_SPI0_MASK;
+		} else if (spi->reg == SPI1) {
+			*spi->pclk_cfg_reg |= SIM_SCGC4_SPI1_MASK;
+		}
+		// jd: TODO: wait for clock running?
+
+
+		/* Enable SPI Operation */
+		// KSDK version:
+		SPI_HAL_Init(i2c->reg);
+
+
+		/* Enable I2C interrupts */
+		NVIC_ClearPendingIRQ(spi->spi_ev_irq);
+		NVIC_EnableIRQ(spi->spi_ev_irq);
+
+		SPI_HAL_Enable(spi->reg);
+		//I2C_HAL_SetIntCmd(i2c->reg, true);
+
+		spi->ctrl->flags |= SPI_FLAG_POWER;
+		break;
+
+	default:
+		return ARM_DRIVER_ERROR_UNSUPPORTED;
+	}
+
+	return ARM_DRIVER_OK;
 }
 
 int32_t SPIx_Send(const void *data, uint32_t num, SPI_RESOURCES *spi) {
