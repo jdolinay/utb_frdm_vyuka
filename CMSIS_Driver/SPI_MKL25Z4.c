@@ -29,6 +29,7 @@
 
 /* Notes:
  * Driver uses HAL from Freescale Kinetis SDK for handling device registers.
+ * IMPORTANT: CMSIS functions are non blocking; here everything is blocking for now!
 
  */
 
@@ -78,6 +79,40 @@ static SPI_RESOURCES SPI0_Resources = {
 //
 //  Functions
 //
+/**
+  \fn          uint32_t SPI_GetClockFreq (uint32_t clk_src)
+  \brief       Return the clock for SPI; in manual it is always bus clock on KL25Z4.
+  BUT  in KSDK it is bus clock for SPI0 and system clock (core) for SPI1! see CLOCK_SYS_GetSpiFreq().
+  \note  TODO: This could be moved to general file, e.g. clock_mkl25z4.h and use enum for clock src instead of
+  SPI_Resources
+   We rely on values of bus clock defined in system_MKL24Z4.h file. Hope it will not change.
+*/
+static uint32_t SPI_GetClockFreq (SPI_RESOURCES* spi)
+{
+	uint32_t clk = 20971520u;	// preset default clock
+#if (CLOCK_SETUP == 0)
+	clk = 20971520u;
+#elif (CLOCK_SETUP == 1 || CLOCK_SETUP == 4)
+	if ( spi->reg == I2C0 )
+		clk = 24000000;	// 24 MHz
+	else
+		clk = 48000000;
+#elif (CLOCK_SETUP == 2)
+	if ( spi->reg == I2C0 )
+		clk = 800000;	// 0.8 MHz
+	else
+		clk = 4000000;
+#elif (CLOCK_SETUP == 3)
+	if ( spi->reg == I2C0 )
+		clk = 1000000;	// 1 MHz
+	else
+		clk = 4000000;	// 4 MHz
+#else
+	#warning CLOCK_SETUP not available for SPI driver. Assuming default bus clock 20.97152MHz.
+	// using preset default clock
+#endif
+	return clk;
+}
 
 /**
   \fn          ARM_DRIVER_VERSION SPI_GetVersion (void)
@@ -118,6 +153,9 @@ static int32_t SPIx_Initialize(ARM_SPI_SignalEvent_t cb_event, SPI_RESOURCES *sp
 
 	/* Register driver callback function */
 	spi->ctrl->cb_event = cb_event;
+	spi->info->status.busy       = 0;
+	spi->info->status.data_lost  = 0;
+	spi->info->status.mode_fault = 0;
 
 	/* Configure SPI Pins */
 	if (spi->reg == SPI0) {
@@ -140,6 +178,9 @@ static int32_t SPIx_Initialize(ARM_SPI_SignalEvent_t cb_event, SPI_RESOURCES *sp
 	/* Clear driver status */
 	memset (&spi->ctrl->status, 0, sizeof(ARM_SPI_STATUS));
 
+	/* Init the SPI into default state which includes disabling it */
+	SPI_HAL_Init(base);
+
 	return ARM_DRIVER_OK;
 }
 
@@ -157,7 +198,7 @@ int32_t SPIx_Uninitialize(SPI_RESOURCES *spi) {
 		  PINS_PinConfigure(RTE_SPI0_MOSI_PIN, 0);
 		  PINS_PinConfigure(RTE_SPI0_SCK_PIN, 0);
 	   }
-	   else if (i2c->reg == I2C1) {
+	   else if (spi->reg == SPI1) {
 
 	   }
 	return ARM_DRIVER_OK;
@@ -220,12 +261,10 @@ int32_t SPIx_PowerControl(ARM_POWER_STATE state, SPI_RESOURCES *spi) {
 		} else if (spi->reg == SPI1) {
 			*spi->pclk_cfg_reg |= SIM_SCGC4_SPI1_MASK;
 		}
-		// jd: TODO: wait for clock running?
-
 
 		/* Enable SPI Operation */
 		// KSDK version:
-		SPI_HAL_Init(i2c->reg);
+		SPI_HAL_Init(spi->reg);
 
 
 		/* Enable I2C interrupts */
@@ -245,7 +284,21 @@ int32_t SPIx_PowerControl(ARM_POWER_STATE state, SPI_RESOURCES *spi) {
 	return ARM_DRIVER_OK;
 }
 
+/**
+  \fn          int32_t SPIx_Send (const void *data, uint32_t num, SSP_RESOURCES *ssp)
+  \brief       Start sending data to SSP transmitter.
+  NOTE: blocking for now!
+  \param[in]   data  Pointer to buffer with data to send to SSP transmitter
+  \param[in]   num   Number of data items to send
+  \param[in]   ssp   Pointer to SPI resources
+  \return      \ref execution_status
+*/
 int32_t SPIx_Send(const void *data, uint32_t num, SPI_RESOURCES *spi) {
+
+	// speed is set in control()
+	//  frame format configured in control
+
+
 
 }
 
@@ -260,8 +313,15 @@ uint32_t SPIx_GetDataCount(SPI_RESOURCES *spi) {
 
 }
 
+// will set baudrate to closest lower possible
 int32_t SPIx_Control(uint32_t control, uint32_t arg, SPI_RESOURCES *spi) {
-    switch (control & ARM_SPI_CONTROL_Msk)
+	uint32_t calculatedBaudRate;
+	uint32_t data_bits;
+
+	if (ssp->info->status.busy)
+		return ARM_DRIVER_ERROR_BUSY;
+
+	switch (control & ARM_SPI_CONTROL_Msk)
     {
     default:
         return ARM_DRIVER_ERROR_UNSUPPORTED;
@@ -280,9 +340,16 @@ int32_t SPIx_Control(uint32_t control, uint32_t arg, SPI_RESOURCES *spi) {
         return ARM_SPI_ERROR_MODE;
 
     case ARM_SPI_SET_BUS_SPEED:             // Set Bus Speed in bps; arg = value
-        break;
+		calculatedBaudRate = SPI_HAL_SetBaud(base, arg, SPI_GetClockFreq());
+		// Check if the configuration is correct
+		if (calculatedBaudRate > arg) {
+			return ARM_SPI_ERROR_MODE;
+		}
+		spi->ctrl->baud = calculatedBaudRate;
+		break;
 
     case ARM_SPI_GET_BUS_SPEED:             // Get Bus Speed in bps
+    	return spi->ctrl->baud;
         break;
 
     case ARM_SPI_SET_DEFAULT_TX_VALUE:      // Set default Transmit value; arg = value
@@ -294,6 +361,67 @@ int32_t SPIx_Control(uint32_t control, uint32_t arg, SPI_RESOURCES *spi) {
     case ARM_SPI_ABORT_TRANSFER:            // Abort current data transfer
         break;
     }
+
+	// Preset defaults to frame format
+	spi->ctrl->databits = 8;
+	spi->ctrl->direction = kSpiMsbFirst;
+	spi->ctrl->phase = kSpiClockPhase_FirstEdge;	// or kSpiClockPhase_SecondEdge
+	spi->ctrl->polarity = kSpiClockPolarity_ActiveHigh;	// or kSpiClockPolarity_ActiveLow
+
+	// Configure Frame Format
+	switch (control & ARM_SPI_FRAME_FORMAT_Msk) {
+	case ARM_SPI_CPOL0_CPHA0:		// polarity 0, phase 0
+		// TODO: is this correct? based on the value in register bits which equals value in enums from KSDK
+		spi->ctrl->polarity = kSpiClockPolarity_ActiveHigh;
+		spi->ctrl->phase = kSpiClockPhase_FirstEdge;
+		break;
+
+	case ARM_SPI_CPOL0_CPHA1:	// Clock Polarity 0, Clock Phase 1
+		spi->ctrl->polarity = kSpiClockPolarity_ActiveHigh;
+		spi->ctrl->phase = kSpiClockPhase_SecondEdge;
+		break;
+
+	case ARM_SPI_CPOL1_CPHA0:
+		spi->ctrl->polarity = kSpiClockPolarity_ActiveLow;
+		spi->ctrl->phase = kSpiClockPhase_FirstEdge;
+		break;
+
+	case ARM_SPI_CPOL1_CPHA1:
+		spi->ctrl->polarity = kSpiClockPolarity_ActiveLow;
+		spi->ctrl->phase = kSpiClockPhase_SecondEdge;
+		break;
+
+	case ARM_SPI_TI_SSI:
+		return ARM_SPI_ERROR_FRAME_FORMAT;
+		break;
+
+	case ARM_SPI_MICROWIRE:
+		return ARM_SPI_ERROR_FRAME_FORMAT;
+		break;
+
+	default:
+		return ARM_SPI_ERROR_FRAME_FORMAT;
+	}
+
+	// Configure Number of Data Bits
+	data_bits = ((control & ARM_SPI_DATA_BITS_Msk) >> ARM_SPI_DATA_BITS_Pos);
+	if ((data_bits >= 4) && (data_bits <= 16)) {
+		spi->ctrl->databits = data_bits;
+	} else {
+		return ARM_SPI_ERROR_DATA_BITS;
+	}
+
+	// Configure Bit Order
+	if ((control & ARM_SPI_BIT_ORDER_Msk) == ARM_SPI_LSB_MSB) {
+		// LSB to MSB
+		spi->ctrl->direction = kSpiLsbFirst;
+	} else {
+		spi->ctrl->direction = kSpiMsbFirst;
+	}
+
+	SPI_HAL_SetDataFormat(spi->reg, spi->ctrl->polarity, spi->ctrl->phase, spi->ctrl->direction);
+
+	return ARM_DRIVER_OK;
 }
 
 ARM_SPI_STATUS SPIx_GetStatus(SPI_RESOURCES *spi) {

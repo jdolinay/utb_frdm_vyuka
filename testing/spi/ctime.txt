@@ -1,0 +1,1 @@
+Toto jsou pomocne soubory pro zkoumani, nepouzite ve vyslednem kodu

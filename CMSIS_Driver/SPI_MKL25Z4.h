@@ -22,6 +22,11 @@ typedef struct {
 	ARM_SPI_SignalEvent_t cb_event;           // Event callback
 	ARM_SPI_STATUS        status;             // Status flags
 	uint8_t               flags;              // Control and state flags
+	uint32_t			  baud;				// current baudrate of the SPI
+	spi_clock_polarity_t polarity;
+	spi_clock_phase_t phase;
+	spi_shift_direction_t direction;
+	uint8_t databits;					// number of data bits. only 8 possible?
 } SPI_CTRL;
 
 /* SPI Resource Configuration */
@@ -30,6 +35,7 @@ typedef struct {
   IRQn_Type             spi_ev_irq;         // SPI Event IRQ Number
   volatile uint32_t    *pclk_cfg_reg;       // Peripheral clock config register
   SPI_CTRL             *ctrl;               // Run-Time control information
+
 } const SPI_RESOURCES;
 
 
