@@ -8,7 +8,7 @@
 #define __SPI_MKL25Z4_H
 
 #include "MKL25Z4.h"
-
+#include "fsl_spi_hal.h"
 #include "Driver_SPI.h"
 
 /* SPI Driver state flags */

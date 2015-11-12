@@ -88,13 +88,7 @@
 #define		RTE_SPI0_SCK_PIN	(GPIO_C5)	/* PTA15/2; PTC5/2; PTD1/2 */
 #define		RTE_SPI0_SCK_FUNC	(2)
 
-// SPI0_SS Pin (Slave Select)
-/*
-#define		RTE_SPI0_SS_PIN	(?)
-#define		RTE_SPI0_SS_FUNC	(?)
-*/
-
-// SPI0_PCSO Pin
+// SPI0_SS Pin (Slave Select) = SPI0_PCSO Pin
 #define		RTE_SPI0_PCSO_PIN	(GPIO_C4)	/* PTA14/2; PTC4/2; PTD0/2 */
 #define		RTE_SPI0_PCSO_FUNC	(2)
 

@@ -153,9 +153,9 @@ static int32_t SPIx_Initialize(ARM_SPI_SignalEvent_t cb_event, SPI_RESOURCES *sp
 
 	/* Register driver callback function */
 	spi->ctrl->cb_event = cb_event;
-	spi->info->status.busy       = 0;
-	spi->info->status.data_lost  = 0;
-	spi->info->status.mode_fault = 0;
+	spi->ctrl->status.busy       = 0;
+	spi->ctrl->status.data_lost  = 0;
+	spi->ctrl->status.mode_fault = 0;
 
 	/* Configure SPI Pins */
 	if (spi->reg == SPI0) {
@@ -179,7 +179,7 @@ static int32_t SPIx_Initialize(ARM_SPI_SignalEvent_t cb_event, SPI_RESOURCES *sp
 	memset (&spi->ctrl->status, 0, sizeof(ARM_SPI_STATUS));
 
 	/* Init the SPI into default state which includes disabling it */
-	SPI_HAL_Init(base);
+	SPI_HAL_Init(spi->reg);
 
 	return ARM_DRIVER_OK;
 }
@@ -230,8 +230,9 @@ int32_t SPIx_PowerControl(ARM_POWER_STATE state, SPI_RESOURCES *spi) {
 		spi->ctrl->flags = SPI_FLAG_INIT;
 		/* Disable SPI interrupts */
 		NVIC_DisableIRQ(spi->spi_ev_irq);
+		SPI_HAL_SetIntMode(spi->reg, kSpiRxFullAndModfInt, false);
+		SPI_HAL_SetIntMode(spi->reg, kSpiTxEmptyInt, false);
 
-		//SPI_HAL_SetIntCmd(i2c->reg, false); /* jd: disable interrupts in i2c module*/
 
 		/* Disable I2C Operation */
 		/* Use Kinetis SDK HAL */
@@ -272,7 +273,6 @@ int32_t SPIx_PowerControl(ARM_POWER_STATE state, SPI_RESOURCES *spi) {
 		NVIC_EnableIRQ(spi->spi_ev_irq);
 
 		SPI_HAL_Enable(spi->reg);
-		//I2C_HAL_SetIntCmd(i2c->reg, true);
 
 		spi->ctrl->flags |= SPI_FLAG_POWER;
 		break;
@@ -296,21 +296,126 @@ int32_t SPIx_PowerControl(ARM_POWER_STATE state, SPI_RESOURCES *spi) {
 int32_t SPIx_Send(const void *data, uint32_t num, SPI_RESOURCES *spi) {
 
 	// speed is set in control()
-	//  frame format configured in control
+	// frame format configured in control
+	/* In order to flush any remaining data in the shift register, disable then enable the SPI */
+	SPI_HAL_Disable(spi->reg);
+	SPI_HAL_Enable(spi->reg);
 
+	/* Make sure TX data register (or FIFO) is empty. If not, return appropriate
+	 * error status. This also causes a read of the status
+	 * register which is required before writing to the data register below.
+	 */
+	if (SPI_HAL_IsTxBuffEmptyPending(spi->reg) != 1) {
+		// TODO: better error code
+		return  ARM_DRIVER_ERROR_SPECIFIC;	//kStatus_SPI_TxBufferNotEmpty;
+	}
 
+	/* Start the transfer by writing the first byte. If a send buffer was provided, the byte
+	 * comes from there. Otherwise we just send a zero byte. Note that before writing to the
+	 * data register, the status register must first be read, which was already performed above.
+	 */
+	uint8_t byteReceived;
+	for (uint32_t i = 0; i < num; i++) {
+		SPI_HAL_WriteData(spi->reg, ((uint8_t*) data)[i]);
+		// wait for transmit complete
+		// we must first read received data
+		while (!SPI_HAL_IsReadBuffFullPending(spi->reg))
+			;
+		byteReceived = SPI_HAL_ReadData(spi->reg);
+
+		// then wait for Tx buffer empty flag
+		while (!SPI_HAL_IsTxBuffEmptyPending(spi->reg))
+			;
+
+	}
+
+	// end transfer, Disable interrupts
+	SPI_HAL_SetIntMode(spi->reg, kSpiRxFullAndModfInt, false);
+	SPI_HAL_SetIntMode(spi->reg, kSpiTxEmptyInt, false);
 
 }
 
+// Send 0s and read received data
 int32_t SPIx_Receive(void *data, uint32_t num, SPI_RESOURCES *spi) {
+	/* In order to flush any remaining data in the shift register, disable then enable the SPI */
+		SPI_HAL_Disable(spi->reg);
+		SPI_HAL_Enable(spi->reg);
+
+		/* Make sure TX data register (or FIFO) is empty. If not, return appropriate
+		 * error status. This also causes a read of the status
+		 * register which is required before writing to the data register below.
+		 */
+		if (SPI_HAL_IsTxBuffEmptyPending(spi->reg) != 1) {
+			// TODO: better error code
+			return  ARM_DRIVER_ERROR_SPECIFIC;	//kStatus_SPI_TxBufferNotEmpty;
+		}
+
+		/* Start the transfer by writing the first byte. If a send buffer was provided, the byte
+		 * comes from there. Otherwise we just send a zero byte. Note that before writing to the
+		 * data register, the status register must first be read, which was already performed above.
+		 */
+		uint8_t byteReceived;
+		for (uint32_t i = 0; i < num; i++) {
+			SPI_HAL_WriteData(spi->reg, 0);
+			// wait for transmit complete
+			// we must first read received data
+			while (!SPI_HAL_IsReadBuffFullPending(spi->reg))
+				;
+			byteReceived = SPI_HAL_ReadData(spi->reg);
+			((uint8_t*)data)[i] = byteReceived;
+
+			// then wait for Tx buffer empty flag
+			while (!SPI_HAL_IsTxBuffEmptyPending(spi->reg))
+				;
+		}
+
+		// end transfer, Disable interrupts
+		SPI_HAL_SetIntMode(spi->reg, kSpiRxFullAndModfInt, false);
+		SPI_HAL_SetIntMode(spi->reg, kSpiTxEmptyInt, false);
 }
 
+// send and receive at the same time
 int32_t SPIx_Transfer(const void *data_out, void *data_in, uint32_t num, SPI_RESOURCES *spi) {
+		/* In order to flush any remaining data in the shift register, disable then enable the SPI */
+		SPI_HAL_Disable(spi->reg);
+		SPI_HAL_Enable(spi->reg);
 
+		/* Make sure TX data register (or FIFO) is empty. If not, return appropriate
+		 * error status. This also causes a read of the status
+		 * register which is required before writing to the data register below.
+		 */
+		if (SPI_HAL_IsTxBuffEmptyPending(spi->reg) != 1) {
+			// TODO: better error code
+			return  ARM_DRIVER_ERROR_SPECIFIC;	//kStatus_SPI_TxBufferNotEmpty;
+		}
+
+		/* Start the transfer by writing the first byte. If a send buffer was provided, the byte
+		 * comes from there. Otherwise we just send a zero byte. Note that before writing to the
+		 * data register, the status register must first be read, which was already performed above.
+		 */
+		uint8_t byteReceived;
+		for (uint32_t i = 0; i < num; i++) {
+			SPI_HAL_WriteData(spi->reg, ((uint8_t*) data_out)[i]);
+			// wait for transmit complete
+			// we must first read received data
+			while (!SPI_HAL_IsReadBuffFullPending(spi->reg))
+				;
+			byteReceived = SPI_HAL_ReadData(spi->reg);
+			((uint8_t*)data_in)[i] = byteReceived;
+
+			// then wait for Tx buffer empty flag
+			while (!SPI_HAL_IsTxBuffEmptyPending(spi->reg))
+				;
+
+		}
+
+		// end transfer, Disable interrupts
+		SPI_HAL_SetIntMode(spi->reg, kSpiRxFullAndModfInt, false);
+		SPI_HAL_SetIntMode(spi->reg, kSpiTxEmptyInt, false);
 }
 
 uint32_t SPIx_GetDataCount(SPI_RESOURCES *spi) {
-
+	return 0;
 }
 
 // will set baudrate to closest lower possible
@@ -318,7 +423,7 @@ int32_t SPIx_Control(uint32_t control, uint32_t arg, SPI_RESOURCES *spi) {
 	uint32_t calculatedBaudRate;
 	uint32_t data_bits;
 
-	if (ssp->info->status.busy)
+	if (spi->ctrl->status.busy)
 		return ARM_DRIVER_ERROR_BUSY;
 
 	switch (control & ARM_SPI_CONTROL_Msk)
@@ -330,9 +435,25 @@ int32_t SPIx_Control(uint32_t control, uint32_t arg, SPI_RESOURCES *spi) {
         return ARM_DRIVER_OK;
 
     case ARM_SPI_MODE_MASTER:               // SPI Master (Output on MOSI, Input on MISO); arg = Bus Speed in bps
+
+    	 /* Set SPI to master mode */
+		SPI_HAL_SetMasterSlave(spi->reg, kSpiMaster);
+
+		/* Set slave select to automatic output mode */
+		SPI_HAL_SetSlaveSelectOutputMode(spi->reg, kSpiSlaveSelect_AutomaticOutput);
+
+		// Need to also set speed, see arg
+		calculatedBaudRate = SPI_HAL_SetBaud(spi->reg, arg,
+				SPI_GetClockFreq(spi));
+		// Check if the configuration is correct
+		if (calculatedBaudRate > arg) {
+			return ARM_SPI_ERROR_MODE;
+		}
+		spi->ctrl->baud = calculatedBaudRate;
         break;
 
     case ARM_SPI_MODE_SLAVE:                // SPI Slave  (Output on MISO, Input on MOSI)
+    	return ARM_DRIVER_ERROR_UNSUPPORTED;
         break;
 
     case ARM_SPI_MODE_MASTER_SIMPLEX:       // SPI Master (Output/Input on MOSI); arg = Bus Speed in bps
@@ -340,7 +461,7 @@ int32_t SPIx_Control(uint32_t control, uint32_t arg, SPI_RESOURCES *spi) {
         return ARM_SPI_ERROR_MODE;
 
     case ARM_SPI_SET_BUS_SPEED:             // Set Bus Speed in bps; arg = value
-		calculatedBaudRate = SPI_HAL_SetBaud(base, arg, SPI_GetClockFreq());
+		calculatedBaudRate = SPI_HAL_SetBaud(spi->reg, arg, SPI_GetClockFreq(spi));
 		// Check if the configuration is correct
 		if (calculatedBaudRate > arg) {
 			return ARM_SPI_ERROR_MODE;
@@ -356,9 +477,16 @@ int32_t SPIx_Control(uint32_t control, uint32_t arg, SPI_RESOURCES *spi) {
         break;
 
     case ARM_SPI_CONTROL_SS:                // Control Slave Select; arg = 0:inactive, 1:active
+    	if ( arg == 1 )
+    		SPI_HAL_SetSlaveSelectOutputMode(spi->reg, kSpiSlaveSelect_AutomaticOutput);
+    	else if (arg == 0 )
+    		SPI_HAL_SetSlaveSelectOutputMode(spi->reg, kSpiSlaveSelect_AsGpio);
+    	else
+    		return ARM_DRIVER_ERROR_UNSUPPORTED;
         break;
 
     case ARM_SPI_ABORT_TRANSFER:            // Abort current data transfer
+    	return ARM_DRIVER_ERROR_UNSUPPORTED;
         break;
     }
 
@@ -405,6 +533,11 @@ int32_t SPIx_Control(uint32_t control, uint32_t arg, SPI_RESOURCES *spi) {
 
 	// Configure Number of Data Bits
 	data_bits = ((control & ARM_SPI_DATA_BITS_Msk) >> ARM_SPI_DATA_BITS_Pos);
+	if ( data_bits == 0 )
+		data_bits = 8;
+	if ( data_bits != 8 )
+		return ARM_SPI_ERROR_DATA_BITS;		// only 8 bit supported
+
 	if ((data_bits >= 4) && (data_bits <= 16)) {
 		spi->ctrl->databits = data_bits;
 	} else {
@@ -440,7 +573,7 @@ void ARM_SPI_SignalEvent(uint32_t event, SPI_RESOURCES *spi) {
 /* SPI0 Driver wrapper functions */
 
 //TODO zde funkce pro SPI0_...
-/* I2C0 Driver wrapper functions */
+/* SPI0 Driver wrapper functions */
 static int32_t SPI0_Initialize (ARM_SPI_SignalEvent_t cb_event) {
   return (SPIx_Initialize (cb_event, &SPI0_Resources));
 }
