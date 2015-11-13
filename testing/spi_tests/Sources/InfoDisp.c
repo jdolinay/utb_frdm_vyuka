@@ -1,7 +1,11 @@
+// Ovladac pro Info displej, puvodne pro HCS08
+// Uprava pro KL25Z
+// Podrobnejsi info viz InfoDisp.h
+
 //#include <hidef.h> /* for EnableInterrupts macro */
 //#include "derivative.h" /* include peripheral declarations */
-// Ovladac pro Info displej, puvodne pro HCS08
-//
+
+// Piny:
 // Pro HC08
 // PTF4 - zapisovy signal 74HC595 = enable
 // PTF5 - reset signal  74HC595 = latch
@@ -16,14 +20,29 @@
 
 #include "MKL25Z4.h"
 #include <stdio.h>
+#include "RTE_Device.h"
 
-#define enable PTFD_PTFD4
-#define latch PTFD_PTFD5
+//#define enable PTFD_PTFD4
+//#define latch PTFD_PTFD5
 
-
+#define		RADEKA_PIN	(16)
+#define		RADEKB_PIN	(5)
+#define		RADEKC_PIN	(4)
+#define 	LATCH_PIN	(7)
+#define		ENABLE_PIN	(6)
+#define		LATCH_HIGH()	PTD->PSOR |= (1 << LATCH_PIN);
+#define		LATCH_LOW()		PTD->PCOR |= (1 << LATCH_PIN);
+#define		ENABLE_HIGH()	PTD->PSOR |= (1 << ENABLE_PIN);
+#define		ENABLE_LOW()	PTD->PCOR |= (1 << ENABLE_PIN);
+#define		RADEKA_HIGH()	PTC->PSOR |= (1 << RADEKA_PIN);
+#define		RADEKA_LOW()	PTC->PCOR |= (1 << RADEKA_PIN);
+#define		RADEKB_HIGH()	PTD->PSOR |= (1 << RADEKB_PIN);
+#define		RADEKB_LOW()	PTD->PCOR |= (1 << RADEKB_PIN);
+#define		RADEKC_HIGH()	PTD->PSOR |= (1 << RADEKC_PIN);
+#define		RADEKC_LOW()	PTD->PCOR |= (1 << RADEKC_PIN);
 
 // makro ktere na KL25Z neni ale je vsude v kodu pro HCS08 :)
-#define	__RESET_WATCHDOG()
+#define	__RESET_WATCHDOG()	; ;
 
 void dwait(void);
 void timer2_ovf_int(void);
@@ -174,16 +193,40 @@ unsigned char pole [7][7] =
 void DispInit(void) {
 
    
-  PTDDD = 0x0E;    	    //  jako vystup
+ /* PTDDD = 0x0E;    	    //  jako vystup
   PTDPE = 0;		        // pull-up vypnuty
   
   enable = 1;
   latch = 0;
   PTFDD = 0x30;    	    //  jako vystup
-  PTFPE = 0;		        // pull-up vypnuty  
-  
+  PTFPE = 0;		        // pull-up vypnuty
+  */
+	// 1. Povolime hodinovy signal pro porty
+	SIM->SCGC5 |= (SIM_SCGC5_PORTC_MASK | SIM_SCGC5_PORTD_MASK);
+
+	// 2. Nastavime funkci pinu na GPIO
+	PORTC->PCR[RADEKA_PIN] = PORT_PCR_MUX(1);
+	PORTD->PCR[RADEKB_PIN] = PORT_PCR_MUX(1);
+	PORTD->PCR[RADEKC_PIN] = PORT_PCR_MUX(1);
+	PORTD->PCR[LATCH_PIN] = PORT_PCR_MUX(1);
+	PORTD->PCR[ENABLE_PIN] = PORT_PCR_MUX(1);
+
+	// 3. Nastavime smer pinu na vystupni
+	PTC->PDDR |= (1 << RADEKA_PIN);
+	PTD->PDDR |= (1 << RADEKB_PIN);
+	PTD->PDDR |= (1 << RADEKC_PIN);
+	PTD->PDDR |= (1 << LATCH_PIN);
+	PTD->PDDR |= (1 << ENABLE_PIN);
+
+	ENABLE_HIGH();
+	LATCH_LOW();
+
+	// Nastavit casovac
+	// HCS08:
   //TPM2SC = 0x4A;  		  // source fbus, delicka 4
   //TPM2MOD = 7140;  	    // modulo registr, TOF perioda 10 ms
+
+	// KL25Z
 	// Povolit clock pro TPM2
 	SIM->SCGC6 |= SIM_SCGC6_TPM2_MASK;
 	// Nastavit zdroj hodin pro casovac TPM (sdileno vsemi moduly TPM)
@@ -195,11 +238,13 @@ void DispInit(void) {
 	// 1 - MCGFLLCLK nebo MCGFLLCLK/2
 	// 2 - OSCERCLK
 	// 3 - MCGIRCLK  (interni generator, 32 kHz nebo 4 MHz)
-	// !!! Pozor pri zapisu do SOPT2 nespolehat na to, ze oba bity
-	// pole TPMSRC jsou vynulovany, nestaci SOPT2[TPMSRC] |= nova_hodnota;
-	// je nutno nejprve vynulovat a pak "ORovat" novou hodnotu.
 	SIM->SOPT2 &= ~SIM_SOPT2_TPMSRC_MASK;
-	SIM->SOPT2 |= SIM_SOPT2_TPMSRC(2);
+	SIM->SOPT2 |= SIM_SOPT2_TPMSRC(1);
+
+	// SPI pro komunikaci s displejem
+	Driver_SPI0.Initialize(0);
+	Driver_SPI0.PowerControl(ARM_POWER_FULL);
+	Driver_SPI0.Control(ARM_SPI_MODE_MASTER | ARM_SPI_CPOL0_CPHA0, 5000000L);
 
 	// Nastavit casovac
 	// Pole PS (prescale) muze byt zmeneno pouze, kdyz je
@@ -214,7 +259,7 @@ void DispInit(void) {
 	// ... pri zakazanem citaci provest nastaveni modulo
 	// Pro clock = 20 MHz / 128; chceme 10 ms periodu > modulo = 1563 Hz
 	TPM2->CNT = 0;	// manual doporucuje vynulovat citac
-	TPM2->MOD = 1563;
+	TPM2->MOD = 500;	// pri 1500 hodne blika
 
 	// ... a nakonec nastavit pozadovane hodnoty vcetne delicky (prescale)
 	TPM2->SC = (TPM_SC_TOIE_MASK	// povolit preruseni
@@ -227,7 +272,7 @@ void DispInit(void) {
 	NVIC_ClearPendingIRQ(TPM2_IRQn);
 	// ...povolit preruseni od TPM0
 	NVIC_EnableIRQ(TPM2_IRQn);
-	// ...nastavit prioritu preruseni: 0 je nejvysi, 3 nejnizsi
+	// ...nastavit prioritu preruseni: 0 je nejvyssi, 3 nejnizsi
 	NVIC_SetPriority(TPM2_IRQn, 2);
 
   // SPI HC08
@@ -237,9 +282,9 @@ void DispInit(void) {
   SPI1C2 = 0x00;
   SPI1C1_SPE = 1;
   */
-  Driver_SPI0.Initialize(0);
-  Driver_SPI0.PowerControl(ARM_POWER_OFF);
-  Driver_SPI0.SPIx_Control(ARM_SPI_MODE_MASTER | ARM_SPI_CPOL0_CPHA0, 5000000L);
+
+	// SPI init je vyse aby nedoslo k TOF preruseni pred jeho inicializaci
+
   
      
   //EnableInterrupts; /* enable interrupts */
@@ -423,18 +468,20 @@ void ZobrazText(char *text, int radek, int sloupec,char invert)
 
 
 
-void TPM0_IRQHandler(void) {
+void TPM2_IRQHandler(void) {
+	uint8_t data[2];
 	// Pokud je zdrojem preruseni TOF
 	if (TPM2->SC & TPM_SC_TOF_MASK) {
 
 		// vymazat priznak preruseni
 		TPM2->SC |= TPM_SC_TOF_MASK;
-		enable = 1;
+		ENABLE_HIGH();	//enable = 1;
 
 		if (radek == 7)
 			radek = 0;
 
-		Driver_SPI0.Send(&pole[radek][0], 1 );
+		data[0] = pole[radek][0];
+		Driver_SPI0.Send(data, 1 );
 		/*while (SPI1S_SPTEF == 0)
 			__RESET_WATCHDOG();
 		SPI1D = pole[radek][0];
@@ -442,7 +489,8 @@ void TPM0_IRQHandler(void) {
 			__RESET_WATCHDOG();
 		temp = SPI1D;*/
 
-		Driver_SPI0.Send(&pole[radek][1], 1 );
+		data[0] = pole[radek][1];
+		Driver_SPI0.Send(data, 1 );
 		/*
 		while (SPI1S_SPTEF == 0)
 			__RESET_WATCHDOG();
@@ -451,7 +499,8 @@ void TPM0_IRQHandler(void) {
 			__RESET_WATCHDOG();
 		temp = SPI1D;*/
 
-		Driver_SPI0.Send(&pole[radek][2], 1 );
+		data[0] = pole[radek][2];
+		Driver_SPI0.Send(data, 1 );
 		/*while (SPI1S_SPTEF == 0)
 			__RESET_WATCHDOG();
 		SPI1D = pole[radek][2];
@@ -459,7 +508,8 @@ void TPM0_IRQHandler(void) {
 			__RESET_WATCHDOG();
 		temp = SPI1D;*/
 
-		Driver_SPI0.Send(&pole[radek][3], 1 );
+		data[0] = pole[radek][3];
+		Driver_SPI0.Send(data, 1 );
 		/*
 		while (SPI1S_SPTEF == 0)
 			__RESET_WATCHDOG();
@@ -468,7 +518,8 @@ void TPM0_IRQHandler(void) {
 			__RESET_WATCHDOG();
 		temp = SPI1D;*/
 
-		Driver_SPI0.Send(&pole[radek][4], 1 );
+		data[0] = pole[radek][4];
+		Driver_SPI0.Send(data, 1 );
 		/*
 		while (SPI1S_SPTEF == 0)
 			__RESET_WATCHDOG();
@@ -477,7 +528,8 @@ void TPM0_IRQHandler(void) {
 			__RESET_WATCHDOG();
 		temp = SPI1D;*/
 
-		Driver_SPI0.Send(&pole[radek][5], 1 );
+		data[0] = pole[radek][5];
+		Driver_SPI0.Send(data, 1 );
 		/*
 		while (SPI1S_SPTEF == 0)
 			__RESET_WATCHDOG();
@@ -486,7 +538,8 @@ void TPM0_IRQHandler(void) {
 			__RESET_WATCHDOG();
 		temp = SPI1D;*/
 
-		Driver_SPI0.Send(&pole[radek][6], 1 );
+		data[0] = pole[radek][6];
+		Driver_SPI0.Send(data, 1 );
 		/*
 		while (SPI1S_SPTEF == 0)
 			__RESET_WATCHDOG();
@@ -495,16 +548,58 @@ void TPM0_IRQHandler(void) {
 			__RESET_WATCHDOG();
 		temp = SPI1D;*/
 
-		// aktivace prislusneho radku
-		PTDD = (PTDD & 0b11110001) | (radek << 1);
+		// Aktivace prislusneho radku
+		// je to v binarnim kodu A, B, C
+		//PTDD = (PTDD & 0b11110001) | (radek << 1);
+		switch(radek) {
+		case 0:
+			RADEKA_LOW();
+			RADEKB_LOW();
+			RADEKC_LOW();
+			break;
+		case 1:
+			RADEKA_HIGH();
+			RADEKB_LOW();
+			RADEKC_LOW();
+			break;
+		case 2:
+			RADEKA_LOW();
+			RADEKB_HIGH();
+			RADEKC_LOW();
+			break;
+		case 3:
+			RADEKA_HIGH();
+			RADEKB_HIGH();
+			RADEKC_LOW();
+			break;
+		case 4:
+			RADEKA_LOW();
+			RADEKB_LOW();
+			RADEKC_HIGH();
+			break;
+		case 5:
+			RADEKA_HIGH();
+			RADEKB_LOW();
+			RADEKC_HIGH();
+			break;
+		case 6:
+			RADEKA_LOW();
+			RADEKB_HIGH();
+			RADEKC_HIGH();
+			break;
+		}
 
-		latch = 1;
+		LATCH_HIGH();	//latch = 1;
 		__RESET_WATCHDOG();
-		latch = 0;
+		LATCH_LOW();	//latch = 0;
 
-		enable = 0;
+		ENABLE_LOW();	//enable = 0;
 
 		radek++;
+		// TODO: vhodne by bylo prenastavit aby dalsi preruseni nastalo za delsi dobu?
+		// aby byly LED delsi dobu rozsviceny?
+		// spise ne, zhasnuty jsou jen v dobe od zacatku do konce tohoto kodu, jinak vzdy 1 radek sviti.
+		//
 	}
 
 }

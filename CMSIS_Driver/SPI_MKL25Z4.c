@@ -7,7 +7,13 @@
  * Driver:       Driver_SPI0,
  * Configured:   via RTE_Device.h configuration file
  * Project:      SPI Driver for Freescale MKL25Z4
- * Limitations: Only Master mode is supported, slave mode is not implemented!
+ * Limitations: This is very limited, poorly tested version!
+ * 				Only Master mode is supported, slave mode is not implemented!
+ * 				All send/receive is blocking, not interrupt based.
+ * 				Only Send with 1 byte value was tested.
+ * 				Receive not tested, slave select not tested.
+ *
+ * Notes: 				KL25Z SPI only supports 8 data bits.
  *
  * -----------------------------------------------------------------------------
  * Use the following configuration settings in the middleware component
@@ -179,7 +185,8 @@ static int32_t SPIx_Initialize(ARM_SPI_SignalEvent_t cb_event, SPI_RESOURCES *sp
 	memset (&spi->ctrl->status, 0, sizeof(ARM_SPI_STATUS));
 
 	/* Init the SPI into default state which includes disabling it */
-	SPI_HAL_Init(spi->reg);
+	// Cannot call init because the clock is not enabled;
+	//SPI_HAL_Init(spi->reg);
 
 	return ARM_DRIVER_OK;
 }
@@ -269,8 +276,8 @@ int32_t SPIx_PowerControl(ARM_POWER_STATE state, SPI_RESOURCES *spi) {
 
 
 		/* Enable I2C interrupts */
-		NVIC_ClearPendingIRQ(spi->spi_ev_irq);
-		NVIC_EnableIRQ(spi->spi_ev_irq);
+		//NVIC_ClearPendingIRQ(spi->spi_ev_irq);
+		//NVIC_EnableIRQ(spi->spi_ev_irq);
 
 		SPI_HAL_Enable(spi->reg);
 
@@ -558,6 +565,7 @@ int32_t SPIx_Control(uint32_t control, uint32_t arg, SPI_RESOURCES *spi) {
 }
 
 ARM_SPI_STATUS SPIx_GetStatus(SPI_RESOURCES *spi) {
+	return spi->ctrl->status;
 }
 
 void ARM_SPI_SignalEvent(uint32_t event, SPI_RESOURCES *spi) {
@@ -584,6 +592,29 @@ static int32_t SPI0_PowerControl (ARM_POWER_STATE state) {
   return (SPIx_PowerControl (state, &SPI0_Resources));
 }
 
+static int32_t SPI0_Send(const void *data, uint32_t num) {
+	return SPIx_Send(data, num, &SPI0_Resources);
+}
+
+static int32_t SPI0_Receive(void *data, uint32_t num) {
+	return SPIx_Receive(data, num, &SPI0_Resources);
+}
+
+static int32_t SPI0_Transfer(const void *data_out, void *data_in, uint32_t num) {
+	SPIx_Transfer(data_out, data_in, num, &SPI0_Resources);
+}
+static int32_t SPI0_Control(uint32_t control, uint32_t arg) {
+	SPIx_Control(control, arg, &SPI0_Resources);
+}
+
+static ARM_SPI_STATUS SPI0_GetStatus() {
+	return SPIx_GetStatus(&SPI0_Resources);
+}
+
+static uint32_t SPI0_GetDataCount() {
+	return SPIx_GetDataCount(&SPI0_Resources);
+}
+
 /* SPI0 Driver Control Block */
 ARM_DRIVER_SPI Driver_SPI0 = {
     SPI_GetVersion,
@@ -591,12 +622,12 @@ ARM_DRIVER_SPI Driver_SPI0 = {
     SPI0_Initialize,
     SPI0_Uninitialize,
     SPI0_PowerControl,
-    /*ARM_SPI_Send,
-    ARM_SPI_Receive,
-    ARM_SPI_Transfer,
-    ARM_SPI_GetDataCount,
-    ARM_SPI_Control,
-    ARM_SPI_GetStatus*/
+    SPI0_Send,
+    SPI0_Receive,
+    SPI0_Transfer,
+    SPI0_GetDataCount,
+    SPI0_Control,
+    SPI0_GetStatus
 };
 
 #endif

@@ -31,13 +31,20 @@
 
 #include "MKL25Z4.h"
 #include "RTE_Device.h"
+#include "InfoDisp.h"
 
 static int i = 0;
 
 int main(void)
 {
 
-    /* Write your code here */
+	DispInit();
+	Clear();	// zhasne vsechny body; zobrazovani rozsvicenim znaku vyzaduje vypnute pozadi
+	//Fill();
+
+	//ZobrazZnak('A', 0, 10, 0);	// 0 = zhasni, 1 = rozsvit bod
+	ZobrazText("Ahoj UTB", 0, 0, 0);	// 0 = zhasni, 1 = rozsvit bod
+	//SetBit(2,5,1);
 
     /* This for loop should be replaced. By default this loop allows a single stepping. */
     for (;;) {
