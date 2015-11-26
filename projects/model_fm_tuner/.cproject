@@ -51,6 +51,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/KSDK/hal}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/KSDK/mkl25z4}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;../../../drivers/lcd&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;../../../drivers/systick&quot;"/>
 								</option>
 								<inputType id="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.input.290036295" superClass="ilg.gnuarmeclipse.managedbuild.cross.tool.c.compiler.input"/>
 							</tool>

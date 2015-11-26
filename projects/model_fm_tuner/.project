@@ -51,6 +51,16 @@
 			<locationURI>PARENT-2-PROJECT_LOC/drivers/lcd/drv_lcd.h</locationURI>
 		</link>
 		<link>
+			<name>Sources/drv_systick.c</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/drivers/systick/drv_systick.c</locationURI>
+		</link>
+		<link>
+			<name>Sources/drv_systick.h</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/drivers/systick/drv_systick.h</locationURI>
+		</link>
+		<link>
 			<name>Sources/model_fm_tuner.c</name>
 			<type>1</type>
 			<locationURI>PARENT-2-PROJECT_LOC/programs/model_fm_tuner/model_fm_tuner.c</locationURI>

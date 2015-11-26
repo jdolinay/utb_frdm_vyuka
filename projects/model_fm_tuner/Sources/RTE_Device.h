@@ -42,7 +42,7 @@
 // I2C0 (Inter-integrated Circuit Interface 0) [Driver_I2C0]
 // Configuration settings for Driver_I2C0 in component ::Drivers:I2C
 //
-#define   RTE_I2C0                      1
+#define   RTE_I2C0                      0
 
 // I2C0_SCL Pin
 #define		RTE_I2C0_SCL_PIN	(GPIO_E24)	/* PTE24/52; PTB0/2; PTB2/2; PTC8/2*/

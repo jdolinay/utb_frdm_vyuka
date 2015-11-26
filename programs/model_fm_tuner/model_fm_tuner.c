@@ -34,12 +34,16 @@
 #include "MKL25Z4.h"
 #include "RTE_Device.h"
 #include "drv_lcd.h"
+#include "drv_systick.h"
+#include <stdio.h>
 
 
 static int i = 0;
 uint32_t freq;
+char buf[32];
 
 uint32_t read_freq(void);
+void write_freq(uint32_t freq);
 void i2c_event(uint32_t event)
 {
 
@@ -48,6 +52,8 @@ void i2c_event(uint32_t event)
 int main(void)
 {
 	uint32_t freq;
+
+	SYSTICK_initialize();
 
 	Driver_I2C1.Initialize(i2c_event);
 	Driver_I2C1.PowerControl(ARM_POWER_FULL);
@@ -58,10 +64,16 @@ int main(void)
     LCD_puts("FM Prijimac test");
     LCD_set_cursor(2,1);
 
-    freq = read_freq();
 
+    write_freq(956);
+    SYSTICK_delay_ms(500);
 
     for (;;) {
+    	freq = read_freq();
+    	sprintf(buf, "%d", freq);
+    	LCD_puts(buf);
+    	SYSTICK_delay_ms(500);
+
         i++;
     }
     /* Never leave main */
@@ -71,9 +83,14 @@ int main(void)
 // TODO: vraci frekvenci * 10 tj. 980 pro 98 MHz
 uint32_t read_freq(void)
 {
+	ARM_I2C_STATUS status;
 	uint32_t freq = 0;
 	uint8_t data[6];
 	Driver_I2C1.MasterReceive(0xC0, data, 5, false);
+	status = Driver_I2C1.GetStatus();
+	while (status.busy) {
+		status = Driver_I2C1.GetStatus();
+	}
 	// todo: mozna nutno volat nejdriv mtransmit s repeated start a pak az receive
 
 	freq=(((((data[0]&0x3F)<<8)+data[1])+1)*32768/4-225000)/100000;
@@ -89,6 +106,7 @@ uint32_t read_freq(void)
 // frekvence je v MHz * 10 tj. 95 MHz se zvoli freq = 950
 void write_freq(uint32_t freq)
 {
+	ARM_I2C_STATUS status;
 	uint8_t buffer[6];
 	uint16_t freq14bit;
 	uint8_t freqH, freqL;
@@ -102,6 +120,10 @@ void write_freq(uint32_t freq)
 		buffer[0] = freqH;
 		buffer[1] = freqL;
 		Driver_I2C1.MasterTransmit(0xC0, buffer, 5, false);
+		status = Driver_I2C1.GetStatus();
+		while (status.busy) {
+			status = Driver_I2C1.GetStatus();
+		}
 		//IIC_write_block(0xC0, &buffer[0]);
 	}
 
