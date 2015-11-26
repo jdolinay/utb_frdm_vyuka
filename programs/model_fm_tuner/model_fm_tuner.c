@@ -43,8 +43,12 @@ uint32_t freq;
 char buf[32];
 
 // adresa obvodu fm tuneru na sbernici I2C1
-#define	I2C_ADR_FM_TUNER		(0xC0)
+// max. 400 kHz
+#define	I2C_ADR_FM_TUNER		(0x60)	// nebo 0x60 viz datasheet: IC address: 110 0000b
+// a za tim je jeste bit RW, je mozne ze muj I2C driver dela shitf sam, pak adresa je 0x60!
+
 // asi adresa, ze ktere se cte frekvence
+// takto to neni! v puvodnim je C0 a c1 protoze to je i write bit I2C!
 #define	 TEA5767_READ_FREQ		(0xC1)
 
 uint32_t read_freq(void);
@@ -67,15 +71,16 @@ int main(void)
     LCD_initialize();
     LCD_clear();
     LCD_puts("FM Prijimac test");
-    LCD_set_cursor(2,1);
 
 
-    write_freq(956);
+    freq = 917;		// 91.7 radio zlin
+    write_freq(freq);
     SYSTICK_delay_ms(500);
 
     for (;;) {
     	freq = read_freq();
     	sprintf(buf, "%d", freq);
+    	LCD_set_cursor(2,1);
     	LCD_puts(buf);
     	SYSTICK_delay_ms(500);
 
@@ -93,12 +98,14 @@ void IIC_read_byte(uint8_t addr, uint8_t *data)
 	ARM_I2C_STATUS status;
 
 	dataSend[0] = addr;
-	Driver_I2C1.MasterTransmit(I2C_ADR_FM_TUNER, dataSend, 1, true);
+	// TODO: posilat 0 nebo 1 byte nebo vubec nevolat master transmit?
+	/*
+	Driver_I2C1.MasterTransmit(I2C_ADR_FM_TUNER, dataSend, 0, true);
 	// Cekame na odeslani dat
 	status = Driver_I2C1.GetStatus();
 	while (status.busy)
 		status = Driver_I2C1.GetStatus();
-
+	 */
 	Driver_I2C1.MasterReceive(I2C_ADR_FM_TUNER, data, 5, false);
 	status = Driver_I2C1.GetStatus();
 	while (status.busy)
@@ -170,7 +177,8 @@ void write_freq(uint32_t freq)
 		buffer[0] = 0x00;
 		buffer[0] = freqH;
 		buffer[1] = freqL;
-		// tyto dalsi hodnoty jsou mozna v buffer protoze jsou nastaveny v init
+		// Dalsi hodnoty jsou v puvodnim ovladaci v buffer,
+		// protoze jsou nastaveny v init
 		buffer[2]=  0b10110000;
 		buffer[3]=  0b00010110;
 		buffer[4] = 0b00000000;
