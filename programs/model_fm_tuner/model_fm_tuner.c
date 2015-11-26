@@ -43,13 +43,14 @@ uint32_t freq;
 char buf[32];
 
 // adresa obvodu fm tuneru TEA 5767 na sbernici I2C1
-// max. 400 kHz
-#define	I2C_ADR_FM_TUNER		(0x60)	// nebo 0x60 viz datasheet: IC address: 110 0000b
-// a za tim je jeste bit RW, je mozne ze muj I2C driver dela shitf sam, pak adresa je 0x60!
+// max. 400 kHz coz odpovida HIGH_SPEED dle I2C CMSIS
+#define	I2C_ADR_FM_TUNER		(0x60)	// Adresa je 0x60
+// Kod pro HC08 pouziva 0xC0 protoze adresa je v odesilanem bajtu posunuta vlevo,
+// vyuziva se jen 7 bitu pro adresu, 8. bit je RW.
 
 // asi adresa, ze ktere se cte frekvence
 // takto to neni! v puvodnim je C0 a c1 protoze to je i write bit I2C!
-#define	 TEA5767_READ_FREQ		(0xC1)
+//#define	 TEA5767_READ_FREQ		(0xC1)
 
 uint32_t read_freq(void);
 void write_freq(uint32_t freq);
@@ -157,7 +158,7 @@ void write_freq(uint32_t freq)
 		// Arduino 0x10 nastavuje jen XTAL, HC verze zapina i noise cancel a high cut...
 		buffer[3]=  0x10;		// arduino: 0x10; hc: 0b00010110;
 		buffer[4] = 0;			// 0 je ok (PLLREF = 0)
-		Driver_I2C1.MasterTransmit(0xC0, buffer, 5, false);
+		Driver_I2C1.MasterTransmit(I2C_ADR_FM_TUNER, buffer, 5, false);
 		status = Driver_I2C1.GetStatus();
 		while (status.busy) {
 			status = Driver_I2C1.GetStatus();
