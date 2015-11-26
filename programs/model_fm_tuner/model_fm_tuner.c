@@ -42,6 +42,11 @@ static int i = 0;
 uint32_t freq;
 char buf[32];
 
+// adresa obvodu fm tuneru na sbernici I2C1
+#define	I2C_ADR_FM_TUNER		(0xC0)
+// asi adresa, ze ktere se cte frekvence
+#define	 TEA5767_READ_FREQ		(0xC1)
+
 uint32_t read_freq(void);
 void write_freq(uint32_t freq);
 void i2c_event(uint32_t event)
@@ -80,18 +85,64 @@ int main(void)
     return 0;
 }
 
+// Obdoba funkce z ovladace pro HC08
+// addr - adresa v obvodu ze ktere cist (toto NENI svale address)
+void IIC_read_byte(uint8_t addr, uint8_t *data)
+{
+	uint8_t dataSend[2] = { 0, 0 };	// data to send
+	ARM_I2C_STATUS status;
+
+	dataSend[0] = addr;
+	Driver_I2C1.MasterTransmit(I2C_ADR_FM_TUNER, dataSend, 1, true);
+	// Cekame na odeslani dat
+	status = Driver_I2C1.GetStatus();
+	while (status.busy)
+		status = Driver_I2C1.GetStatus();
+
+	Driver_I2C1.MasterReceive(I2C_ADR_FM_TUNER, data, 5, false);
+	status = Driver_I2C1.GetStatus();
+	while (status.busy)
+		status = Driver_I2C1.GetStatus();
+
+	/*
+	 unsigned int i;
+	 int x;
+	 byte dummy;
+	 IIC1C_TXAK = 0;            // RX/TX = 1; MS/SL = 1; TXAK = 0;
+	 IIC1C |= 0x30;             // And generate START condition;
+
+    //-----Start of transmit first byte to IIC bus-----
+    IIC1D = 0xC0;                            // Address the slave and set up for master transmit;
+    while (!IIC1S_IICIF)__RESET_WATCHDOG();  // wait until IBIF;
+    IIC1S_IICIF=1;                           // clear the interrupt event flag;
+    while(IIC1S_RXAK)__RESET_WATCHDOG();     // check for RXAK;
+    //-----Slave ACK occurred------------
+    IIC1C_RSTA = 1;                          // set up for repeated start
+    IIC1D = addr;                            // slave adress read
+    while(!IIC1S_IICIF)__RESET_WATCHDOG();   // wait until IBIF
+    IIC1S_IICIF=1;                           // clear the interrupt event flag;
+    while(IIC1S_RXAK)__RESET_WATCHDOG();     // check for RXAK;
+    IIC1C_TX = 0;                            // set up to receive;
+    dummy = IIC1D;                           // dummy read
+    for(x=0;x<4;x++){
+        while (!IIC1S_IICIF)__RESET_WATCHDOG();  // wait until IBIF;
+        IIC1S_IICIF=1;                           // clear the interrupt event flag;
+        data[x]=IIC1D;
+    }
+    IIC1C_TXAK = 1;                          // acknowledge disable;
+    while (!IIC1S_IICIF)__RESET_WATCHDOG();  // wait until IBIF;
+    IIC1S_IICIF=1;                           // clear the interrupt event flag;
+    IIC1C_MST = 0;                           // generate STOP condition;
+    data[4]=IIC1D;
+    for(i=0;i<1000;i++)__RESET_WATCHDOG(); */
+}
+
 // TODO: vraci frekvenci * 10 tj. 980 pro 98 MHz
 uint32_t read_freq(void)
 {
-	ARM_I2C_STATUS status;
-	uint32_t freq = 0;
 	uint8_t data[6];
-	Driver_I2C1.MasterReceive(0xC0, data, 5, false);
-	status = Driver_I2C1.GetStatus();
-	while (status.busy) {
-		status = Driver_I2C1.GetStatus();
-	}
-	// todo: mozna nutno volat nejdriv mtransmit s repeated start a pak az receive
+
+	IIC_read_byte(TEA5767_READ_FREQ, data);
 
 	freq=(((((data[0]&0x3F)<<8)+data[1])+1)*32768/4-225000)/100000;
 	return freq;
@@ -119,6 +170,10 @@ void write_freq(uint32_t freq)
 		buffer[0] = 0x00;
 		buffer[0] = freqH;
 		buffer[1] = freqL;
+		// tyto dalsi hodnoty jsou mozna v buffer protoze jsou nastaveny v init
+		buffer[2]=  0b10110000;
+		buffer[3]=  0b00010110;
+		buffer[4] = 0b00000000;
 		Driver_I2C1.MasterTransmit(0xC0, buffer, 5, false);
 		status = Driver_I2C1.GetStatus();
 		while (status.busy) {
