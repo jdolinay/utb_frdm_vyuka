@@ -95,6 +95,7 @@ int main(void)
 // TODO: vraci frekvenci * 10 tj. 980 pro 98 MHz
 uint32_t read_freq(void)
 {
+	ARM_I2C_STATUS status;
 	uint8_t data[6];
 
 	// funkce hc08 je zavadejici, cte se pole
@@ -104,8 +105,8 @@ uint32_t read_freq(void)
 	while (status.busy)
 		status = Driver_I2C1.GetStatus();
 
-	frequency=(((((data[0]&0x3F)<<8)+data[1])+1)*32768/4-225000)/100000;
-	return frequency;
+	freq=(((((data[0]&0x3F)<<8)+data[1])+1)*32768/4-225000)/100000;
+	return freq;
 
 	/* mbed:
 	frequency = ((buf_temp[0]&0x3f)<<8) | buf_temp[1];
