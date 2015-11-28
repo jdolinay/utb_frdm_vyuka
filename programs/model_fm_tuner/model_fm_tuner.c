@@ -2,9 +2,8 @@
  Ukazka prace s modulem FM radioprijimac
 
  Vyuziva ovladac I2C dle CMSIS
- Postup vytvoreni projektu s ovladacem I2C
 
- * Postup vytvoreni projektu s ovladacem I2C
+ * Postup vytvoreni projektu s ovladacem I2C:
  * 1) Pridat do projektu soubor RTE_Devices.h z CMSIS_Driver/Config.
  * Vhodne je zkopirovat (Copy file) do projektu a ne linkovat (Link to file),
  * aby mohl mit kazdy projekt svou konfiguraci ovladacu.
@@ -42,22 +41,17 @@ static int i = 0;
 uint32_t freq;
 char buf[32];
 
-// adresa obvodu fm tuneru TEA 5767 na sbernici I2C1
-// max. 400 kHz coz odpovida HIGH_SPEED dle I2C CMSIS
+// Adresa obvodu fm tuneru TEA 5767 na sbernici I2C1
+// Frekvence max. 400 kHz coz odpovida HIGH_SPEED dle I2C CMSIS
 #define	I2C_ADR_FM_TUNER		(0x60)	// Adresa je 0x60
 // Kod pro HC08 pouziva 0xC0 protoze adresa je v odesilanem bajtu posunuta vlevo,
 // vyuziva se jen 7 bitu pro adresu, 8. bit je RW.
 
-// asi adresa, ze ktere se cte frekvence
-// takto to neni! v puvodnim je C0 a c1 protoze to je i write bit I2C!
-//#define	 TEA5767_READ_FREQ		(0xC1)
 
 uint32_t read_freq(void);
 void write_freq(uint32_t freq);
-void i2c_event(uint32_t event)
-{
 
-}
+void i2c_event(uint32_t event) { }
 
 int main(void)
 {
@@ -73,18 +67,20 @@ int main(void)
     LCD_clear();
     LCD_puts("FM Prijimac test");
 
-    // init FM je v mbed nastaveni frekvence
+
 
     freq = 917;		// 91.7 radio zlin
     write_freq(freq);
-    SYSTICK_delay_ms(500);
+
+    SYSTICK_delay_ms(2000);
 
     for (;;) {
+
     	freq = read_freq();
     	sprintf(buf, "%d", freq);
     	LCD_set_cursor(2,1);
     	LCD_puts(buf);
-    	SYSTICK_delay_ms(500);
+    	SYSTICK_delay_ms(2000);
 
         i++;
     }
@@ -92,14 +88,14 @@ int main(void)
     return 0;
 }
 
-// TODO: vraci frekvenci * 10 tj. 980 pro 98 MHz
+// Cte frekvenci nastavenou v obvodu FM tuneru
+// Vraci: frekvence * 10 tj. napr. pro 98 MHz vrati 980
 uint32_t read_freq(void)
 {
 	ARM_I2C_STATUS status;
 	uint8_t data[6];
 
-	// funkce hc08 je zavadejici, cte se pole
-	//IIC_read_byte(TEA5767_READ_FREQ, data);
+	// Vzdy cteme 5 bajtu
 	Driver_I2C1.MasterReceive(I2C_ADR_FM_TUNER, data, 5, false);
 	status = Driver_I2C1.GetStatus();
 	while (status.busy)
@@ -119,14 +115,12 @@ uint32_t read_freq(void)
 	freq=(((((data[0]&0x3F)<<8)+data[1])+1)*32768/4-225000)/100000;
 	return freq;
 	*/
-	//IIC_read_byte(0xC1, &read[0]);
-	//frequency=(((((read[0]&0x3F)<<8)+read[1])+1)*32768/4-225000)/100000;
-	//return frequency;
+
 }
 
 
-// zvoli frekvenci
-// frekvence je v MHz * 10 tj. 95 MHz se zvoli freq = 950
+// Zapise do obvodu FM tuneru novou frekvenci, tj. preladi na danou frekvenci.
+// Vstup: frekvence v MHz * 10 tj. pro 95 MHz se funkci preda freq = 950
 void write_freq(uint32_t freq)
 {
 	ARM_I2C_STATUS status;
@@ -153,18 +147,19 @@ void write_freq(uint32_t freq)
 		// Hodnota 0xB0 = 0b10110000 je ok :)
 
 		// Hodnoty pro byte 4:
-		// Bit 4 = frekvence krystalu, bit XTAL
-		// spolu s bitem 7 v byte 5 = PLLREF
+		// Bit 4 (XTAL) = frekvence krystalu spolu s bitem 7 v byte 5 = PLLREF
 		// Hodnota PLLREF = 0 a XTAL = 1 odpovida 32,768 kHz
 		// Arduino 0x10 nastavuje jen XTAL, HC verze zapina i noise cancel a high cut...
 		buffer[3]=  0x10;		// arduino: 0x10; hc: 0b00010110;
 		buffer[4] = 0;			// 0 je ok (PLLREF = 0)
+
+		// Odesilame 5 bajtu a cekame na odeslani
 		Driver_I2C1.MasterTransmit(I2C_ADR_FM_TUNER, buffer, 5, false);
 		status = Driver_I2C1.GetStatus();
 		while (status.busy) {
 			status = Driver_I2C1.GetStatus();
 		}
-		//IIC_write_block(0xC0, &buffer[0]);
+
 	}
 
 	/* Arduino:
@@ -183,93 +178,7 @@ void write_freq(uint32_t freq)
 }
 
 
-#if 0
-// Obdoba funkce z ovladace pro HC08
-// addr - adresa v obvodu ze ktere cist (toto NENI svale address)
-void IIC_read_byte(uint8_t addr, uint8_t *data)
-{
-	ARM_I2C_STATUS status;
 
-	// TODO: posilat 0 nebo 1 byte nebo vubec nevolat master transmit?
-	// Nemelo by byt MAsterTransmit protoze to vzdy posila R/W bit = 0 tj. "write"
-	// ale tuner pro cteni dat ocekava RW=1= "read"
-	/*
-	uint8_t dataSend[2] = { 0, 0 };	// data to send
-	dataSend[0] = addr;
-	Driver_I2C1.MasterTransmit(I2C_ADR_FM_TUNER, dataSend, 0, true);
-	// Cekame na odeslani dat
-	status = Driver_I2C1.GetStatus();
-	while (status.busy)
-		status = Driver_I2C1.GetStatus();
-	 */
-	Driver_I2C1.MasterReceive(I2C_ADR_FM_TUNER, data, 5, false);
-	status = Driver_I2C1.GetStatus();
-	while (status.busy)
-		status = Driver_I2C1.GetStatus();
-
-	/* Arduino:
-	 Wire.requestFrom(0x60,5); //reading TEA5767
-	 if (Wire.available())
-	 {
-	 for (int i=0; i<5; i++) {
-	 buffer[i]= Wire.read();
-	 }
-
-	 freq_available=(((buffer[0]&0x3F)<<8)+buffer[1])*32768/4-225000;
-	 lcd.print("FM ");
-	 lcd.print((freq_available/1000000));
-	 frequencyH=((buffer[0]&0x3F));
-	 frequencyL=buffer[1];
-	 if (search_mode) {
-	 if(buffer[0]&0x80) search_mode=0;
-	 }
-
-	 if (search_mode==1) lcd.print(" SCAN");
-	 else {
-	 lcd.print("       ");
-	 }
-	 lcd.setCursor(0, 1);
-	 lcd.print("Level: ");
-	 lcd.print((buffer[3]>>4));
-	 lcd.print("/16 ");
-	 if (buffer[2]&0x80) lcd.print("STEREO   ");
-	 else lcd.print("MONO   ");
-	 }
-
-	 */
-	/* hc08:
-	 unsigned int i;
-	 int x;
-	 byte dummy;
-	 IIC1C_TXAK = 0;            // RX/TX = 1; MS/SL = 1; TXAK = 0;
-	 IIC1C |= 0x30;             // And generate START condition;
-
-    //-----Start of transmit first byte to IIC bus-----
-    IIC1D = 0xC0;                            // Address the slave and set up for master transmit;
-    while (!IIC1S_IICIF)__RESET_WATCHDOG();  // wait until IBIF;
-    IIC1S_IICIF=1;                           // clear the interrupt event flag;
-    while(IIC1S_RXAK)__RESET_WATCHDOG();     // check for RXAK;
-    //-----Slave ACK occurred------------
-    IIC1C_RSTA = 1;                          // set up for repeated start
-    IIC1D = addr;                            // slave adress read
-    while(!IIC1S_IICIF)__RESET_WATCHDOG();   // wait until IBIF
-    IIC1S_IICIF=1;                           // clear the interrupt event flag;
-    while(IIC1S_RXAK)__RESET_WATCHDOG();     // check for RXAK;
-    IIC1C_TX = 0;                            // set up to receive;
-    dummy = IIC1D;                           // dummy read
-    for(x=0;x<4;x++){
-        while (!IIC1S_IICIF)__RESET_WATCHDOG();  // wait until IBIF;
-        IIC1S_IICIF=1;                           // clear the interrupt event flag;
-        data[x]=IIC1D;
-    }
-    IIC1C_TXAK = 1;                          // acknowledge disable;
-    while (!IIC1S_IICIF)__RESET_WATCHDOG();  // wait until IBIF;
-    IIC1S_IICIF=1;                           // clear the interrupt event flag;
-    IIC1C_MST = 0;                           // generate STOP condition;
-    data[4]=IIC1D;
-    for(i=0;i<1000;i++)__RESET_WATCHDOG(); */
-}
-#endif
 
 
 ////////////////////////////////////////////////////////////////////////////////
