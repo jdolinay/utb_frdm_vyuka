@@ -24,4 +24,16 @@
 		<nature>org.eclipse.cdt.managedbuilder.core.managedBuildNature</nature>
 		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>Sources/drv_uart.c</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/drivers/uart/drv_uart.c</locationURI>
+		</link>
+		<link>
+			<name>Sources/drv_uart.h</name>
+			<type>1</type>
+			<locationURI>PARENT-2-PROJECT_LOC/drivers/uart/drv_uart.h</locationURI>
+		</link>
+	</linkedResources>
 </projectDescription>
