@@ -1,54 +1,53 @@
 /*
- * Ukazkovy program pro Programovani mikropocitacu
- * Blikani LED s vyuzitim "vysokourovnovych" funkci
- * jako pinWrite a pinRead.
- * Tyto funkce jsou obsazeny v ovladaci drv_gpio.
+ * Sample program for MCU programming course
+ * The program uses high-level functions from GPIO driver (drv_gpio) such as pinWrite and pinRead.
  *
- * Program obsahuje chyby! Opravte je, tak aby fungoval podle zadání.
  *
- * Program má blikat LED na kitu tak, aby doba svitu byla stejná jako
- * doba kdy LED nesviti a LED blikala rychlosti asi 1x za sekundu.
+ * THERE ARE ERRORS IN THE PROGRAM!!!
+ * Fix the program so that it works as defined below.
  *
- * Podle vlastní odvahy si zvolte obtiznost reseni chyb pomoci #define OBTIZNOST nize.
+ * The LED should be blinking about once per second with the ON time
+ * the same as OFF time.
+ *
+ * You can set the difficulty of the task for yourself below using the #define	DIFFICULTY value 0 or 1.
  *
  */
 
 #include "MKL25Z4.h"
 #include "drv_gpio.h"
 
-// Definujte si obtiznost:
+// Define the difficulty:
 // 0 = normal
-// 1 = nightmare (nocni mura :) )
-#define	OBTIZNOST  	0
+// 1 = nightmare
+#define	DIFFICULTY 	0
 
 
 //////////////////////////////////////////////////////////////////////////
 
-/* Obtiznost 0 = nizka */
-#if OBTIZNOST == 0
-// Prototyp funkce delay() definovane nize
+/* difficulty 0 = easy */
+#if DIFFICULTY == 0
+
+
 void delay(void);
 
 int main(void)
 {
 
-	GPIO_initialize();
+	GPIO_Initialize();
 
-	// Nastavit pin jako vystup
+	// Set pin to output mode
 	pinMode(LD2, OUTPUT);
-	// Piny pro tlacitka jako vstup
-	pinMode(SW1, INPUT);
-	pinMode(SW2, INPUT);
 
-	// Zapsat na pin log. 1, tim LED zhasne.
+
+	// Write log 1 to the pin; to turn off LED
 	pinWrite(LD2, HIGH);
 
-	// Blikani LED
+	// blink the LED LED
 	while(1)
 	{
-		pinWrite(LD2, LOW);	// ...rozsvitime LED zapisem log. 0
+		pinWrite(LD2, LOW);		// ...turn on by writing 0
 		delay();
-		pinWrite(LD2, HIGH);	// ...zhasneme LED zapisem log. 1
+		pinWrite(LD2, HIGH);	// ...turn off by writing 1
 	}
 
 
@@ -57,7 +56,7 @@ int main(void)
 }
 
 /* delay
- * Jednoducha cekaci funkce - busy wait
+ * Simple busy wait
  * */
 void delay(void)
 {
@@ -66,28 +65,25 @@ void delay(void)
 		;
 }
 
-/* Obtiznost 1 = vysoka */
-#elif OBTIZNOST == 1
-// Prototyp funkce delay() definovane nize
+/* difficulty 1 = high (hard) */
+#elif DIFFICULTY == 1
+
 void delay(void);
 
 int main(void)
 {
 
-	// Nastavit pin jako vystup
+	// Set pin to output mode
 	pinMode(LD1, OUTPUT);
-	// Piny pro tlacitka jako vstup
-	pinMode(SW1, INPUT);
-	pinMode(SW1, INPUT);
 
-	// Zapsat na pin log. 1, tim LED zhasne.
+	// Write log 1 to the pin; to turn off LED
 	pinWrite(LD2, HIGH);
 
 	for(;;)
 	{
-		pinWrite(LD2, LOW);		// ...rozsvitime LED zapisem log. 0
+		pinWrite(LD2, LOW);		// ...turn on by writing 0
 		delay();
-		pinWrite(LD2, HIGH);	// ...zhasneme LED zapisem log. 1
+		pinWrite(LD2, HIGH);	// ...turn off by writing 1
 		delay;
 	}
 
@@ -101,7 +97,7 @@ void delay(void)
 		;
 }
 #else
-	#error Obtiznost neni nastavena na platnou hodnotu!
+	#error There is no valid value for DIFFICULTY!
 #endif
 
 
