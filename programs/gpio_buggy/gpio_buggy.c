@@ -16,17 +16,21 @@
 #include "MKL25Z4.h"
 #include "drv_gpio.h"
 
-// Define the difficulty:
+/* ******************************************** */
+// Define the difficulty here:
 // 0 = normal
 // 1 = nightmare
 #define	DIFFICULTY 	0
+/* ******************************************** */
+
 
 
 //////////////////////////////////////////////////////////////////////////
 
-/* difficulty 0 = easy */
+/* difficulty 0 = easy
+ * Define the difficulty at the TOP of the program. Do not change the following line!
+ */
 #if DIFFICULTY == 0
-
 
 void delay(void);
 
@@ -65,7 +69,9 @@ void delay(void)
 		;
 }
 
-/* difficulty 1 = high (hard) */
+/* difficulty 1 = high (hard)
+ * Define the difficulty above. Do not change the following line!
+ */
 #elif DIFFICULTY == 1
 
 void delay(void);
