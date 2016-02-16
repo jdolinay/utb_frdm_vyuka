@@ -1,36 +1,30 @@
 /*
- * Ukazkovy program pro Programovani mikropocitacu
- * Cteni stavu tlacitka SW1 na pinu PTA4.
- * Pokud je tlacitko stisknuto, program zvetsi hodnotu promenne "counter" o 1.
- * Zastavte program v debuggeru a podivejte se na hodnotu promenne
- * "counter" - mela by odpovidat poctu stisku tlacitka.
+ * Sample program for MCU programming course
  *
  * Reads (and debounces) switch SW1 on the pin PTA4.
  * If switch is pressed it will increment the value in variable "counter".
  * Stop the program in debugger to look at the variable and check the
  * number of switch presses.
  *
- * Pro praci s piny jsou pouzivany "vysokourovnove" funkce
- * jako pinWrite a pinRead.
- * Tyto funkce jsou obsazeny v ovladaci drv_gpio.
+ * Uses driver drv_gpio.
  *
- * Mame k dispozici 4 tlacitka SW1 az SW4 na pinech:
+ * Switches are available on these pins:
  * A4 - SW1
  * A5 - SW2
  * A16 - SW3
  * A17 - SW4
- * Pri stisku tlacitka je z pinu ctena log. 0.
+ * When pressed, we read 0 from the pin.
  *
- * Mame k dispozici LED na pinech:
- * (LED primo na FRDM-KL25Z)
+  * LED available on the board:
+ * (LED directly on FRDM-KL25Z board)
  * B18 	- Red LED
  * B19 	- Green LED
  * D1	- Blue LED (Arduino pin D13)
- * (LED na UTB kitu)
- * B8 - LD1 cervena
- * B9 - LD2 zluta
- * B10 - LD3 zelena
- * Vsechny LED sviti, pokud je pin 0 (LOW).
+ * (LED on the mother board)
+ * B8 - LED_RED
+ * B9 - LED_YELLOW
+ * B10 - LED_GREEN
+ * All LEDs turn on with low level on the pin.
  *
  */
 

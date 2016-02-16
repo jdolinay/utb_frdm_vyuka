@@ -1,107 +1,81 @@
 /*
- * Ukazkovy program pro Programovani mikropocitacu
- * Ovladani LED pomoci tlacitek pomoci prace s registry MCU.
- * Program pri stisku tlacitka SW1 zaple LED,
- * pri stisku SW2 vypne LED.
+ * Sample program for MCU programming course
+ * Control LED by 2 buttons. Direct register access.
+ * SW1 turns LED on; SW2 turns it off.
  *
  *
- * Mame k dispozici 4 tlacitka SW1 az SW4:
+* Switches are available on these pins:
  * A4 - SW1
  * A5 - SW2
  * A16 - SW3
  * A17 - SW4
- * Pri stisku tlacitka je z pinu ctena log. 0.
- * Na pinu by mel byt zapnut pull up rezistor.
+ * When pressed, we read 0 from the pin.
  *
- * Mame k dispozici tyto LED:
- * LED primo na FRDM-KL25Z:
+  * LED available on the board:
+ * (LED directly on FRDM-KL25Z board)
  * B18 	- Red LED
  * B19 	- Green LED
  * D1	- Blue LED (Arduino pin D13)
- * Na UTB kitu jsou dalsi LED:
+ * (LED on the mother board)
  * B8 - LED_RED
  * B9 - LED_YELLOW
  * B10 - LED_GREEN
- *  Vsechny LED sviti pokud je pin 0 (LOW).
+ * All LEDs turn on with low level on the pin.
  *
-  Uzitecne informace
-  1. U ARM je nutno povolovat hodinovy signal (clock) pro jednotlive porty.
-  	  V registru SCGC5 v modulu SIM.
-
-  2. Soubor MKL25Z4.h definuje strukturu pro pristup k registrum portu. (dle CMSIS)
-	 Struktura se jmenuje PORT_Type.
-	 Definuje take "instance" teto struktury pro jednotlive porty, napr.:
-	 #define PORTA   ((PORT_Type *)PORTA_BASE)
-
-  3. Dale definuje struktury pro pristup k portu v rezimu GPIO, GPIO_Type.
-	 A instance teto struktury pro jednotlive porty, napr.:
-	 #define PTA     ((GPIO_Type *)PTA_BASE)
-
- *
- * tip: upravit aby i test off tlacitka pouzival funkci
- * tip: vytvorit vlastni funkci pro zap/vyp led.
  */
 
 #include "MKL25Z4.h"
 
-// Cislo pinu (na portu B) pro LED, kterou ovladame.
-// Napr. 18 pro cervenou LED primo na FRDM desce.
-// Pozor: zmena je mozna pouze v ramci portu B, kod neni univerzalni,
-// nebude fungovat pro piny na jinem portu
+// Number of the pin to use, e.g. 18 is the RED LED on FRDM board.
+// Note: this will only work for pins (LEDs) on port B!
 #define		LED_PIN		(19)
 
-// Cisla pinu na portu A pro tlacitka, ktera pouzivame.
+// Number of pins for switches on port A
 // 4 = SW1, 5 = SW2.
 #define		ON_PIN		(4)
 #define		OFF_PIN		(5)
 
 
-// Prototypy funkci definovanych nize
 void delay(void);
 static inline int IsKeyPressed(int pin);
 
 
 int main(void)
 {
-	// 1. Povolime hodinovy signal pro port A a B
+	// 1. Enable clock for ports
 	SIM->SCGC5 |= (SIM_SCGC5_PORTA_MASK | SIM_SCGC5_PORTB_MASK );
 
-	// 2. Nastavime funkci pinu na GPIO
-	// PORT_PCR_MUX je makro definovane v MKL25Z4.h, vstupem je
-	// cislo funkce pinu (zjistime v datasheetu)
+	// 2. Set pin function to GPIO
 	PORTB->PCR[LED_PIN] = PORT_PCR_MUX(1);
 	PORTA->PCR[ON_PIN] = PORT_PCR_MUX(1);
 	PORTA->PCR[OFF_PIN] = PORT_PCR_MUX(1);
 
-	// 3. Nastavime smer pinu LED na vystupni
-	// Zapisem 1 do prislusneho bitu registru PDDR
+	// 3. LED as output
 	PTB->PDDR |= (1 << LED_PIN);
-	// Pro tlacitka na vstupni
+	// switches as inputs
 	PTA->PDDR &= ~(1 << ON_PIN);
 	PTA->PDDR &= ~(1 << OFF_PIN);
 
-	// 4. Zapneme interni pull-up rezistory pro tlacitka
-	// Poznamka: pro nas kit neni potreba, jsou osazeny externi, ale
-	// pro ukazku zapiname.
-	// PORT_PCR_PS_MASK - maska pro vyber pull-up a ne pull-down
-	// PORT_PCR_PE_MASK - maska pro povoleni pull rezistoru
+	// 4. Enable internal pull-ups for buttons
+	// PORT_PCR_PS_MASK - select pull-up and not pull down
+	// PORT_PCR_PE_MASK - enables pull up/down resistors
 	PORTA->PCR[ON_PIN] |= (PORT_PCR_PS_MASK | PORT_PCR_PE_MASK);
 	PORTA->PCR[OFF_PIN] |= (PORT_PCR_PS_MASK | PORT_PCR_PE_MASK);
 
-	// Zhasneme LED zapisem log. 1 na pin
+	// Turn LED off
 	PTB->PSOR |= (1 << LED_PIN);
 
-	// 5. Cekame na stisk tlacitek a podle toho ovladame LED
+	// 5. Wait for switch press and control LED
 	while(1)
 	{
-		// Tlacitko pro zapnuti stisknuto?
-		// stisknuto = na pinu je log. 0.
-		// Hodnotu pinu cteme z registru PDIR (Data In register)
+		// On switch pressed?
+		// if yes, there will be 0 on the pin.
+		// Read value from PDIR register (Data In register)
 		if ( IsKeyPressed(ON_PIN) )
-			PTB->PCOR |= (1 << LED_PIN);	// zapnout LED (clear pin)
+			PTB->PCOR |= (1 << LED_PIN);	// turn on LED (clear pin)
 
 		if ( (PTA->PDIR & (1 << OFF_PIN)) == 0 )
-			PTB->PSOR |= (1 << LED_PIN);	// vypnout LED (set pin)
+			PTB->PSOR |= (1 << LED_PIN);	// turn off LED (set pin)
 
 		delay();
 	}
@@ -112,7 +86,7 @@ int main(void)
 }
 
 /* delay
- * Jednoducha cekaci funkce - busy wait
+ * busy wait
  * */
 void delay(void)
 {
@@ -121,7 +95,7 @@ void delay(void)
 		;
 }
 
-/* Vraci 1 pokud je tlacitko na danem pinu stisknuto a 0 pokud neni stisknuto
+/* Return 1 if the switch on given pin is pressed, 0 if not pressed.
  * */
 static inline int IsKeyPressed(int pin)
 {

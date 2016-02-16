@@ -1,28 +1,27 @@
 /*
- * Ukazkovy program pro Programovani mikropocitacu
- * Cteni stavu tlacitka SW1 na pinu PTA4.
- * Pokud je tlacitko stisknuto, rozsviti LED LD1 (na pinu PTB8).
- * Pro praci s piny jsou pouzivany "vysokourovnove" funkce
- * jako pinWrite a pinRead.
- * Tyto funkce jsou obsazeny v ovladaci drv_gpio.
+ * Sample program for MCU programming course
+ * Read switch connected to pin PTA4.
+ * If it is pressed (closed), turn on LED LD1 (pin PTB8).
+ * Uses driver drv_gpio.
  *
- * Mame k dispozici 4 tlacitka SW1 az SW4 na pinech:
+ * Switches are available on these pins:
  * A4 - SW1
  * A5 - SW2
  * A16 - SW3
  * A17 - SW4
- * Pri stisku tlacitka je z pinu ctena log. 0.
+ * When pressed, we read 0 from the pin.
  *
- * Mame k dispozici LED na pinech:
- * (LED primo na FRDM-KL25Z)
+  * LED available on the board:
+ * (LED directly on FRDM-KL25Z board)
  * B18 	- Red LED
  * B19 	- Green LED
  * D1	- Blue LED (Arduino pin D13)
- * (LED na UTB kitu)
- * B8 - LD1 cervena
- * B9 - LD2 zluta
- * B10 - LD3 zelena
- * Vsechny LED sviti, pokud je pin 0 (LOW).
+ * (LED on the mother board)
+ * B8 - LED_RED
+ * B9 - LED_YELLOW
+ * B10 - LED_GREEN
+ * All LEDs turn on with low level on the pin.
+ *
  *
  */
 
@@ -33,11 +32,11 @@
 #define SWITCH_NOT_PRESSED  (0)
 
 
-// Cteni stavu tlacitka. Vraci SWITCH_PRESSED nebo SWITCH_NOT_PRESSED
+// Read switch state. Return SWITCH_PRESSED or SWITCH_NOT_PRESSED.
 int switch1_read(void);
-// Inicializace pinu pro tlacitko
+// Initialize pin for switch SW1
 void switch1_init(void);
-// Zpozdeni pro osetreni zakmitu
+// Delay for debouncing
 void delay_debounce(void);
 
 
@@ -45,14 +44,14 @@ int main(void)
 {
 	int sw_state;
 
-	// inicializace ovladace GPIO
+	// initialize GPIO driver
 	GPIO_Initialize();
 
-	// inicializace pinu pro tlacitko
+	// initialize pin for the switch
 	switch1_init();
 
-	// inicializace pinu pro LED
-	pinMode(LD1, OUTPUT);	// Nastavit pin pro LED jako vystup
+	// initialize pin ofr the LED
+	pinMode(LD1, OUTPUT);
 
 	while (1)
 	{
@@ -61,11 +60,11 @@ int main(void)
 		// display the status of the switch using LED1
 		if (sw_state == SWITCH_PRESSED)
 		{
-			pinWrite(LD1, LOW);	// ...rozsvitime LED zapisem log. 0
+			pinWrite(LD1, LOW);	// ...LED on; write log. 0
 		}
 		else
 		{
-			pinWrite(LD1, HIGH);	// ...zhasneme LED zapisem log. 1
+			pinWrite(LD1, HIGH);	// ...LED off
 		}
 	}
 
@@ -79,15 +78,15 @@ int main(void)
 */
 void switch1_init(void)
 {
-	// Nastavit pin pro SW1 jako vstup s povolenym pull-up rezistorem
+	// Set the pin as input with pull up resistor enabled
 	pinMode(SW1, INPUT_PULLUP);
 }
 
 /*
  switch1_read
- Cte stav tlacitka SW1 s osetrenim zakmitu.
- Vraci SWITCH_NOT_PRESSED pokud tlacitko neni stisknuto,
- SWITCH_PRESSED pokud je stisknuto.
+ Read switch SW1 state with debounce.
+ Returns SWITCH_NOT_PRESSED if switch is not depressed,
+ SWITCH_PRESSED if it is depressed.
 
  Reads and debounces switch SW1 as follows:
  1. If switch is not pressed, return SWITCH_NOT_PRESSED.
@@ -101,24 +100,24 @@ int switch1_read(void)
     int switch_state = SWITCH_NOT_PRESSED;
     if ( pinRead(SW1) == LOW )
     {
-    	// tlacitko je stisknuto
+    	// switch is pressed
 
         // debounce = wait
         delay_debounce();
 
-        // znovu zkontrolovat stav tlacitka
+        // check switch state again
         if ( pinRead(SW1) == LOW )
         {
             switch_state = SWITCH_PRESSED;
         }
     }
-    // vratime stav tlacitka
+    // return the status of the switch
     return switch_state;
 }
 
 
 /* delay_debounce
- * Jednoducha cekaci funkce pro osetreni zakmitu tlacitka.
+ * Simple busy wait for debouncing.
  * */
 void delay_debounce(void)
 {
