@@ -1,18 +1,16 @@
 /*
- * Ukazkovy program pro Programovani mikropocitacu
- * Analogove-Digitalni prevodnik.
- * Program ukazuje ziskani hodnoty z A/D prevodniku.
- * Napeti na vstupu A/D prevodniku se nastavuje potenciometrem na kitu.
- * Podle velikosti napeti se rozsviti 0 az 3 LED na kitu.
- * LED tak predstavuji sloupcovy indikator (bar graph) napeti na vstupu
- * A/D prevodniku, ktere je nastaveno potenciometrem.
+ * Sample program for MCU programming course
+ * Analog to Digital Converter (ADC)
+ * The program shows how to obtain data from ADC.
+ * Input voltage on the ADC input can be changed using potentiometer on the board.
+ * According to the voltage, 0 to 3 LEDs will turn on (like a bargraph)
  *
- * Uzitecne informace:
- * Potenciometr je na pinu PTC2 (coz je kanal 11 A/D prevodniku)
+ * Intormation
+ * Potentiometer is on pin PTC2 (which is channel 11 of the ADC)
  *
- * Hodinova frekvence A/D prevodniku musi byt 2 - 12 MHz pri rozliseni 16 bit.
- * Pri rozliseni <= 13 bit 1 - 18 MHz.
- * Pro kalibraci je doporuceno <= 4 MHz.
+ * Clock speed of ADC must be between 2 and 12 MHz if the resolution is 16-bit.
+ * For resolution <= 13 bit: 1 - 18 MHz.
+ * For calibrating clock <= 4 MHz is recommended.
  *
  */
 
@@ -26,72 +24,71 @@ uint32_t ADCCalibrate(void);
 int main(void)
 {
 
-	// Pro praci s LED vyuzijeme ovladac GPIO
+	// GPIO driver is used for LEDs
 	GPIO_Initialize();
 
-	// Piny pro LED jako vystupy
+	// Set LED pins as outputs
 	pinMode(LD1, OUTPUT);
 	pinMode(LD2, OUTPUT);
 	pinMode(LD3, OUTPUT);
 
-	// Zhasnuti LED zapisem log. 1
+	// Turn off all LEDs
 	pinWrite(LD1, HIGH);
 	pinWrite(LD2, HIGH);
 	pinWrite(LD3, HIGH);
 
 
-	// Inicializace A/D prevodniku
+	// Initialize ADC
 	ADCInit();
 
-	// Kalibrace a nova inicializace
-	// Pro dosazeni udavane presnosti musi byt prevodnik kalibrovan po
-	// kazdem resetu.
-	// Nova inicializace je potreba protoze pri kalibraci
-	// je prevodnik prenastaven.
+	// Calibrate the ADC and initialize again
+	// The ADC should be calibrated after each reset.
+	// New initialization is needed because the calibration
+	// changes the ADC settings.
 	ADCCalibrate();
 	ADCInit();
 
-	// Nastaveni pinu, kde je pripojen potenciometr,
-	// do rezimu vstupu pro A/D prevodnik: pin PTC2, funkce ALT0
-	// 1. Povolime hodinovy signal pro port C
+	// Configure the pin where potentiometer is connected
+	// to be input of ADC: PTC2 to function ALT0.
+	// 1. Enable clock for port C
 	SIM->SCGC5 |= SIM_SCGC5_PORTC_MASK;
-	// 2. NAstavime funkci pinu na ALT0 = vstup A/D prevodniku
+	// 2. Set pin function to ALT0 = ADC input
 	PORTC->PCR[2] = PORT_PCR_MUX(0);
 
 
 	while (1) {
 
-		// Spusteni prevodu na kanalu 11.
-		// Protoze ostatni nastaveni v registru SC1 mame na 0, muzeme si dovolit
-		// primo v nem prepsat hodnotu cislem kanalu. Lepsi reseni by bylo
-		// "namaskovat" cislo kanalu bez zmeny hodnoty registru.
+		// Start conversion on channel 11.
+		// Because all the settings in SC1 register are 0, we can just write the number
+		// of the channel into the register. A better way would be to use bit manipulation
+		// to set just the bits which affect channel number without overwriting the whole register.
 		ADC0->SC1[0] = ADC_SC1_ADCH(11);
 
-		// Cekame na dokonceni prevodu
+		// Wait for conversion completion
 		while ( (ADC0->SC1[0] & ADC_SC1_COCO_MASK) == 0 )
 			;
 
-		// Ulozime vysledek prevodu
+		// Store result
 		uint16_t vysledek = ADC0->R[0];
 
-		// Zhasneme vsechny LED
+		// Turn all LEDs off
 		pinWrite(LD1, HIGH);
 		pinWrite(LD2, HIGH);
 		pinWrite(LD3, HIGH);
 
-		// Vyhodnotime vysledek: pri 10 bitovem prevodu je v rozsahu 0 - 1023
+		// Process the result: with 10-bit result the value is 0 - 1023
 		if (vysledek > 255) {
-			// Rozsvit LED1
+			// LED1 on
 			pinWrite(LD1, LOW);
 		}
 
 		if (vysledek > 510) {
-			// Rozsvit LED2
+			// LED2 on
 			pinWrite(LD2, LOW);
 		}
 
 		if (vysledek > 765) {
-			// Rozsvit LED3
+			// LED3 on
 			pinWrite(LD3, LOW);
 		}
 
@@ -105,45 +102,45 @@ int main(void)
 }
 
 /*	ADCInit
-    Inicializuje A/D prevodnik
-    Nastavuje zdroj hodin na bus clock a delicku na 8,
-    rozliseni na 10 bit, ...
+    Initialize ADC
+    Set clock source to bus clock and prescaler to 8,
+    resolution 10-bit,...
 */
 void ADCInit(void)
 {
-	// Povolit hodinovy signal pro ADC
+	// Enable clock for ADC
 	SIM->SCGC6 |= SIM_SCGC6_ADC0_MASK;
 
-	// Zakazeme preruseni, nastavime kanal 31 = A/D prevodnik vypnut, jinak by zapisem
-	// doslo ke spusteni prevodu
-	// Vybereme single-ended mode
+	// Disable interrupt, set channel 31 which means ADC off,
+	// otherwise write to the register would start conversion
+	// Select single-ended mode
 	ADC0->SC1[0] =  ADC_SC1_ADCH(31);
 
-	// Vyber hodinoveho signalu, preddelicky a rozliseni
-	// Clock pro ADC nastavime <= 4 MHz, coz je doporuceno pro kalibraci.
-	// Pri max. CPU frekvenci 48 MHz je bus clock 24 MHz, pri delicce = 8
-	// bude clock pro ADC 3 MHz
+	// Select clock source, prescaler and resolution
+	// Set clock <= 4 MHz as recommended for calibration.
+	// With CPU clock 58 MHz max, the bus clock is 24 MHz; with
+	// prescaler = 8 the clock for ADC will be 24 / 8 = 3 MHz.
 	ADC0->CFG1 = ADC_CFG1_ADICLK(0)		/* ADICLK = 0 -> bus clock */
 		| ADC_CFG1_ADIV(3)				/* ADIV = 3 -> clock/8 */
 		| ADC_CFG1_MODE(2);				/* MODE = 2 -> rozliseni 10-bit */
 
-	// Do ostatnich registru zapiseme vychozi hodnoty:
-	// Vybereme sadu kanalu "a", vychozi nejdelsi cas prevodu (24 clocks)
+	// Write default values into other registers:
+	// Set the channel set "a", and default, longest conversion time (24 clocks)
 	ADC0->CFG2 = 0;
 
-	// Softwarove spousteni prevodu, vychozi reference
+	// Software trigger of conversion, default reference voltage
 	ADC0->SC2 = 0;
 
-	// Hardwarove prumerovani vypnuto
+	// Hardware averaging disabled
 	ADC0->SC3 = 0;	/* default values, no averaging */
 
 }
 
 /*
   ADCCalibrate
-  Kalibrace ADC.
-  Kod prevzat z ukazkoveho kodu pro FRDM-KL25Z.
-  Pri chybe kalibrace vraci 1, pri uspechu vraci 0
+  Calibrate the ADC.
+  The code is from sample code for FRDM-KL25Z.
+  It returns 1 if calibration error occured, 0 if ok.
 */
 uint32_t ADCCalibrate(void)
 {
@@ -195,7 +192,7 @@ uint32_t ADCCalibrate(void)
 	  return 0;
 }
 
-// Kratke cekani
+// short delay
 void delay(void)
 {
 	uint32_t n = 100000;
