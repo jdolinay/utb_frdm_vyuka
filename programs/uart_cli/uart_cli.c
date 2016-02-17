@@ -1,24 +1,22 @@
 /*
- * Ukazkovy program pro Programovani mikropocitacu
- * Seriova komunikace (UART), ovladani pres textove prikazy (CLI).
- * Program ukazuje zpracovani prikazu posilanych pres seriovou linku.
- * Komunikacni rychlost 9600 bd.
- * Podporovane prikazy:
- * ledon - zapni LED
- * ledoff - vypni LED
- * ver - zobraz verzi
- * Prikaz se potvrzuje klavesou ENTER.
+ * Sample program for MCU programming course
+ * Serial communication (UART). Controlling program via Command Line Interface (CLI).
+ * The program shows how to process commands sent over serial line.
+ * Baud rate 9600 bd.
+ * Supported commands:
+ * ledon - turn on LED
+ * ledoff - turn off LED
+ * ver - print program version
+ * On PC type the command and press ENTER.
  *
- * POZOR: v nastaveni projektu > compiler > preprocesor musi byt CLOCK_SETUP=1
- * aby byl CPU clock 48 MHz!
+ * NOTE: In project properties > compiler > preprocesor must be defined: CLOCK_SETUP=1
+ * so that the CPU runs at 48 MHz!
  *
-  Uzitecne informace
-  1. KL25Z obsahuje 3 UART moduly: UART0, UART1 a UART2. Modul UART0 je pripojen
-   	   take na piny pro USB komunikace, lze s nim tedy komunikovat pres virtualni
-   	   seriovy port pres USB kabel zapojeny do SDA konektoru na desce FRDM.
-   	   Je dostupny na pocitaci jako "Open SDA - CDC Serial Port".
-
-  2. Soubor MKL25Z4.h definuje strukturu pro pristup k registrum UART (dle CMSIS)
+ * Information
+   KL25Z has 3 UART modules: UART0, UART1 a UART2. Module UART0 is connected also
+   	   to the pins for USB communication; so it is available via virtual serial port
+   	   over the USB cable connected to the SDA connector on FRDM-KL25Z board.
+   	   On the desktop PC you will see it as "Open SDA - CDC Serial Port".
  *
  */
 
@@ -45,17 +43,17 @@ int main(void)
 	char rcvChar;
     bool commandReady;
 
-	// Inicializace serioveho rozhrani UART
+	// Initialize UART (using uart driver)
 	UART0_Initialize(BD9600);
 
 	while (1) {
-		// Cekame na prichod znaku
+		// Wait for character from serial line
 		rcvChar = UART0_getch();
 
-		// Odesleme znak zpet na seriovou linku (echo)
+		// Send the character back (echo)
 		UART0_putch(rcvChar);
 
-		/* Build a new command. */
+		// Build a new command.
 		commandReady = cliBuildCommand(rcvChar);
 
 		/* Call the CLI command processing routine to verify the command entered
@@ -135,12 +133,10 @@ void cliProcessCommand(void)
 {
     if ( strcmp(G_CommandBuffer, "ledon") == 0 )
     {
-        //PTFD_PTFD0 = 0;
         UART0_puts("\n\rLED1 is on\n\r");
     }
     else if (strcmp(G_CommandBuffer, "ledoff") == 0 )
     {
-       // PTFD_PTFD0 = 1;
         UART0_puts("\n\rLED1 is off\n\r");
     }
     else if (strcmp(G_CommandBuffer, "ver") == 0 )

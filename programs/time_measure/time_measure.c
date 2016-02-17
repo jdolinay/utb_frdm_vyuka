@@ -1,10 +1,10 @@
 /*
- * Ukazkovy program pro Programovani mikropocitacu
- * Mereni casu a komunikace pres seriovou linku pro zobrazeni vysledku.
- * Seriova komunikace (UART), komunikacni rychlost 9600 bd.
+ * Sample program for MCU programming course
+ * Measure time and communicate over serial line (UART) to display desults.
+ * Baudrate: 9600
  *
- * POZOR: v nastaveni projektu > compiler > preprocesor musi byt CLOCK_SETUP=1
- * aby byl CPU clock 48 MHz!
+ * NOTE: In project properties > compiler > preprocesor must be defined: CLOCK_SETUP=1
+ * so that the CPU runs at 48 MHz!
  *
  *
  */
@@ -15,7 +15,7 @@
 #include "drv_uart.h"
 #include "drv_systick.h"
 
-// LED pro pripad ladeni; pin A19 je zelena LED na FRDM-KL25Z desce.
+// LED for debugging; pin A19 is Green LED on FRDM-KL25Z
 #define		LED_PIN		(19)
 
 
@@ -24,7 +24,7 @@ int main(void)
 	uint32_t start, end, result;
 	char buf[32];
 
-	/* LED pro pripad ladeni
+	/* LED for debugging
 	SIM->SCGC5 |= (SIM_SCGC5_PORTA_MASK | SIM_SCGC5_PORTB_MASK );
 	PORTB->PCR[LED_PIN] = PORT_PCR_MUX(1);
 	PTB->PDDR |= (1 << LED_PIN);
@@ -48,7 +48,7 @@ int main(void)
 		result = end - start;
 
 		sprintf(buf, "%u", result );
-		UART0_puts("Vysledek: ");
+		UART0_puts("Result: ");
 		UART0_puts(buf);
 		UART0_puts("\n");
 

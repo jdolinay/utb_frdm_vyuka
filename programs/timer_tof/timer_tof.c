@@ -1,14 +1,11 @@
 /*
- * Ukazkovy program pro Programovani mikropocitacu
- * Casovac TPM, preruseni od preteceni casovace.
- * Program ukazuje blikani LED s vyuzitim preruseni TOF (preteceni citace).
- * LED blikne 1x za sekundu (0,5 s sviti, 0,5 s nesviti), tj. preruseni
- * je vyvolano 2x za sekundu.
+ * Sample program for MCU programming course
+ * Timer TPM, interrupt from timer overflow (TOF)
+ * Program blinks LED in the TOF interrupt service routine (ISR)
+ * LED blinks once per second (0.5 s on/ 0.5 s off), so the interrupt is triggered twice per second.
  *
- * POZOR: v nastaveni projektu > compiler > preprocesor musi byt CLOCK_SETUP=1
- * aby byl CPU clock 48 MHz!
- *
- * Uzitecne informace:
+ * NOTE: In project properties > compiler > preprocesor must be defined: CLOCK_SETUP=1
+ * so that the CPU runs at 48 MHz!
  *
  */
 
@@ -20,77 +17,74 @@ int main(void)
 {
 	uint32_t counter;
 
-	// Pro ovladani LED pouzijeme ovladac GPIO
+	// using GPIO driver for LED
 	GPIO_Initialize();
 	pinMode(LD1, OUTPUT);
 	pinWrite(LD1, HIGH);
 
 
-	// Povolit clock pro TPM0
+	// Enable clock for TPM0
 	SIM->SCGC6 |= SIM_SCGC6_TPM0_MASK;
 
 
-	// Nastavit zdroj hodin pro casovac TPM (sdileno vsemi moduly TPM)
-	// Dostupne zdroje hodinoveho signalu zavisi na CLOCK_SETUP
-	// Pro CLOCK_SETUP = 1 nebo 4 je mozno pouzit OSCERCLK (8 MHz)
-	// Pro CLOCK_SETUP = 0 (vychozi v novem projektu) PLLFLLCLK (20.97152 MHz)
-	// Mozne hodnoty:
-	// 0 - clock vypnut
-	// 1 - MCGFLLCLK nebo MCGFLLCLK/2
+	// Set the clock source for TPM timers (shared by all TPM modules)
+	// Available clock sources depend on CLOCK_SETUP value
+	// For CLOCK_SETUP = 1 or 4 you can use OSCERCLK (8 MHz)
+	// For CLOCK_SETUP = 0 (default in new project) use PLLFLLCLK (20.97152 MHz)
+	// Possible values:
+	// 0 - clock off
+	// 1 - MCGFLLCLK or MCGFLLCLK/2
 	// 2 - OSCERCLK
-	// 3 - MCGIRCLK  (interni generator, 32 kHz nebo 4 MHz)
-	// !!! Pozor pri zapisu do SOPT2 nespolehat na to, ze oba bity
-	// pole TPMSRC jsou vynulovany, nestaci SOPT2[TPMSRC] |= nova_hodnota;
-	// je nutno nejprve vynulovat a pak "ORovat" novou hodnotu.
-	SIM->SOPT2 &= ~SIM_SOPT2_TPMSRC_MASK;
-	SIM->SOPT2 |= SIM_SOPT2_TPMSRC(2);
+	// 3 - MCGIRCLK  (internal generator, 32 kHz or 4 MHz)
+	SIM->SOPT2 &= ~SIM_SOPT2_TPMSRC_MASK;	// first clear the bits
+	SIM->SOPT2 |= SIM_SOPT2_TPMSRC(2);		// then write requested value
 
 
-	// Nastavit casovac
-	// Pole PS (prescale) muze byt zmeneno pouze, kdyz je
-	// citac casovace zakazan (counter disabled), tj. pokud SC[CMOD] = 0
-	// ...nejprve zakazat counter
+
+	// Set the timer
+	// PS (prescale) field can be changed only when counter is disabled, i.e. SC[CMOD] = 0
+	// ...first disable counter
 	TPM0->SC = TPM_SC_CMOD(0);
 
-	// ...pockat az se zmena projevi (acknowledged in the LPTPM clock domain)
+	// ...wait for the change to be "acknowledged in the LPTPM clock domain"
 	while (TPM0->SC & TPM_SC_CMOD_MASK )
 		;
 
-	// ... pri zakazanem citaci provest nastaveni modulo
-	// Pri clock = 8 MHz / 128 = 62500 Hz
-	// Pro 2 preruseni za sekundu modulo nastavit na 31250
-	TPM0->CNT = 0;	// manual doporucuje vynulovat citac
+	// ... also set modulo while counter is disabled
+	// For clock = 8 MHz / 128 = 62500 Hz,
+	// To get 2 interrupts per second et modulo to 31250
+	TPM0->CNT = 0;
 	TPM0->MOD = 31250;
 
-	// ... a nakonec nastavit pozadovane hodnoty vcetne delicky (prescale)
-	TPM0->SC = ( TPM_SC_TOIE_MASK	// povolit preruseni
-			| TPM_SC_TOF_MASK	// smazat pripadny priznak preruseni
-			| TPM_SC_CMOD(1)	// vyber interniho zdroje hodinoveho signalu
-			| TPM_SC_PS(7) );	// delicka = 128
+	// ... finally, set desired values
+	TPM0->SC = ( TPM_SC_TOIE_MASK	// interrupt enabled
+			| TPM_SC_TOF_MASK	// clear any pending interrupt
+			| TPM_SC_CMOD(1)	// select internal clock source
+			| TPM_SC_PS(7) );	// prescale = 128
 
 
-	// Preruseni je treba povolit take v NVIC
-	// ...smazat pripadny priznak cekajiciho preruseni
+	// Enable the interrupt also in NVIC
+	// ...1st clear any pending interrupt
 	NVIC_ClearPendingIRQ(TPM0_IRQn);
-	// ...povolit preruseni od TPM0
+	// ...enable interurpt from TPM0
 	NVIC_EnableIRQ(TPM0_IRQn);
-	// ...nastavit prioritu preruseni: 0 je nejvysi, 3 nejnizsi
+	// ...set interupt priority (0 is max, 3 is lowest priority)
 	NVIC_SetPriority(TPM0_IRQn, 2);
 
 
-	// Nic dalsiho se v hlavni smycce programu nedeje, vse resi obsluha preruseni
+	// Nothing else to do here in the main loop; everything happens in the ISR
 	while(1)
 	{
 		counter++;
 	}
 
 	/*
-	 TIP: zamyslete se nad hodnotou "counter" pokud bychom misto preruseni
-	 pro blikani pouzili takovyto kod uvnitr while:
-	  rozsvit led
-	  cekej
-	  zhasni led
-	  cekej
+	 Note: What would be the value of "counter" if we used this code in the while
+	 loop instead of interrupt:
+	  turn led on
+	  wait
+	  turn led off
+	  wait
 	*/
 
     /* Never leave main */
@@ -99,29 +93,29 @@ int main(void)
 
 
 
-/* Obsluha pro TOF interrupt.
-   Jmeno obsluzne funkce je preddefinovano.
-   Staci v nasem programu vytvorit funkci tohoto jmena a bude
-   volana ona misto vychozi prazdne funckce.
+/* ISR for TOF interrupt.
+   The name if the ISR is pre-defined.
+   In your code just create function with this name and it will be called
+   when the interrupt occurs.
 */
 void TPM0_IRQHandler(void)
 {
-	// static promenna si uchova hodnotu i mezi volanimi funkce
+	// static variable keeps the value between function calls
 	static uint8_t ledSviti = 0;
 
-	// Pokud je zdrojem preruseni TOF
+	// If the interrupt source is TOF
 	if (TPM0->SC & TPM_SC_TOF_MASK) {
 
-		// vymazat priznak preruseni
+		// clear TOF flag
 		TPM0->SC |= TPM_SC_TOF_MASK;
 
-		// Zmenit stav LED
+		// Change LED state
 		if (ledSviti) {
-			pinWrite(LD1, HIGH);	// zhasnout
+			pinWrite(LD1, HIGH);	// off
 			ledSviti = 0;
 		}
 		else {
-			pinWrite(LD1, LOW);		// rozsvitit
+			pinWrite(LD1, LOW);		// on
 			ledSviti = 1;
 		}
 	}

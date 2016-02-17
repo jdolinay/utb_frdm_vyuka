@@ -1,117 +1,112 @@
 /*
- * Ukazkovy program pro Programovani mikropocitacu
- * Casovac TPM, generovani PWM.
- * Program ukazuje rizeni jasu LED s vyuzitim casovace.
- * Cervena LED na FRDM-KL25Z meni jas od 0 do 100% pomoci hardwarove
- * generovaneho PWM casovacem TPM2 s frekvenci 100 Hz.
+ * Sample program for MCU programming course
+ * Timer TPM, generating PWM.
+ * The program controls the brightness of LED using timer module .
+ * Red LED on FRDM-KL25Z changes brightness from 0 to 100% using hardwarove PWM
+ * of timer TPM2; frequency is 100 Hz.
  *
- * POZOR: v nastaveni projektu > compiler > preprocesor musi byt CLOCK_SETUP=1
- * aby byl CPU clock 48 MHz!
+ * NOTE: In project properties > compiler > preprocesor must be defined: CLOCK_SETUP=1
+ * so that the CPU runs at 48 MHz!
  *
- * Uzitecne informace:
- * Pomoci casovace muzeme ridit LED RGB primo na FRDM-KL25Z desce,
- * LED LD1 az LD3 na vyvojovem kitu nejsou napojeny na kanaly casovace.
+ * Information
+ * It is possible to control the RGB LED on FRDM-KL25Z board with hw pwm.
+ * The LEDs LD1 to LD3 on the "main board" are not connected to timer channels.
  *
- * B18 	- Red LED - TPM2 kanal 0 (ALT3)
- * B19 	- Green LED - TPM2 kanal 1 (ALT3)
- * D1	- Blue LED - TPM0 kanal 1 (ALT4)
+ * B18 	- Red LED - TPM2 channel 0 (ALT3)
+ * B19 	- Green LED - TPM2 channel 1 (ALT3)
+ * D1	- Blue LED - TPM0 channel 1 (ALT4)
  *
  */
 
 #include "MKL25Z4.h"
 #include "stdbool.h"
 
-// Cislo kanalu TPM2 na kterem generujeme PWM
+// Channel of TPM2 which generates PWM
 // 0 - RED LED
 // 1 - GREEN LED
 #define	PWM_CHANNEL		(0)
 
-// Cislo pinu, na kterem generujeme PWM
-// POZOR: musi byt synchronni s PWM_CHANNEL!
+// Pin number where PWM is generated
+// NOTE: must by in sync with PWM_CHANNEL!
 #define	PWM_PINNUMBER	(18)
 
 void delay(void);
 
 int main(void)
 {
-	// Kolik tiku casovace odpovida 1% sirky pulsu.
-	// Nastaveno na spravnou hodnotu nize pri nastaveni casovace
+	// How many "ticks" of the counter is equal to 1 % of the pulse width.
+	// Set in the code below...
 	uint32_t ticksPerPercent = 1;
 
 
-	// Povolit clock pro TPM0
+	// Enable clock for TPM0
 	SIM->SCGC6 |= SIM_SCGC6_TPM2_MASK;
 
 
-	// Nastavit zdroj hodin pro casovac TPM (sdileno vsemi moduly TPM)
-	// Dostupne zdroje hodinoveho signalu zavisi na CLOCK_SETUP
-	// Pro CLOCK_SETUP = 1 nebo 4 je mozno pouzit OSCERCLK (8 MHz)
-	// Pro CLOCK_SETUP = 0 (vychozi v novem projektu) PLLFLLCLK (20.97152 MHz)
-	// Mozne hodnoty:
-	// 0 - clock vypnut
-	// 1 - MCGFLLCLK nebo MCGFLLCLK/2
+	// Set the clock source for TPM timers (shared by all TPM modules)
+	// Available clock sources depend on CLOCK_SETUP value
+	// For CLOCK_SETUP = 1 or 4 you can use OSCERCLK (8 MHz)
+	// For CLOCK_SETUP = 0 (default in new project) use PLLFLLCLK (20.97152 MHz)
+	// Possible values:
+	// 0 - clock off
+	// 1 - MCGFLLCLK or MCGFLLCLK/2
 	// 2 - OSCERCLK
-	// 3 - MCGIRCLK  (interni generator, 32 kHz nebo 4 MHz)
-	// !!! Pozor pri zapisu do SOPT2 nespolehat na to, ze oba bity
-	// pole TPMSRC jsou vynulovany, nestaci SOPT2[TPMSRC] |= nova_hodnota;
-	// je nutno nejprve vynulovat a pak "ORovat" novou hodnotu.
-	SIM->SOPT2 &= ~SIM_SOPT2_TPMSRC_MASK;
-	SIM->SOPT2 |= SIM_SOPT2_TPMSRC(2);
+	// 3 - MCGIRCLK  (internal generator, 32 kHz or 4 MHz)
+	SIM->SOPT2 &= ~SIM_SOPT2_TPMSRC_MASK;	// first clear the bits
+	SIM->SOPT2 |= SIM_SOPT2_TPMSRC(2);		// then write requested value
 
 
-	// Nastavit casovac
-	// Pole PS (prescale) muze byt zmeneno pouze, kdyz je
-	// citac casovace zakazan (counter disabled), tj. pokud SC[CMOD] = 0
-	// ...nejprve zakazat counter
+	// Set the timer
+	// PS (prescale) field can be changed only when counter is disabled, i.e. SC[CMOD] = 0
+	// ...first disable counter
 	TPM2->SC = TPM_SC_CMOD(0);
 
-	// ...pockat az se zmena projevi (acknowledged in the LPTPM clock domain)
+	// ...wait for the change to be "acknowledged in the LPTPM clock domain"
 	while (TPM2->SC & TPM_SC_CMOD_MASK )
 		;
 
 	//
-	// ... pri zakazanem citaci provest nastaveni
+	// ...  while counter is disabled change the settings
 	//
-	// Nastavime PWM s pulsy zarovnanymi na zacatek periody (edge aligned).
-	// Protoze LED sviti pri log. 0 na pinu, pouzijeme low-true pulses,
-	// tj. puls bude hodnota log. 0 a "klid" mezi pulsy bude log. 1.
-	// Doba do preteceni citace urcuje periodu PWM.
-	// Pozadujeme periodu 100 Hz, tedy doba do preteceni je 0.01 s (10 ms):
+	// Set PWM with pulses aligned to beginning of period (edge aligned).
+	// The LED is on when pin is low (0), so we need low-true pulses,
+	// i.e. "pulse" is value 0 on pin and delay between pulses is 1 on the pin.
+	// The time to overflow is the period of the PWM signal.
+	// Required period 100 Hz, so time to overflow is 0.01 s (10 ms):
 	// Modulo = (0.01 * 8000000)/Prescale = 80000/8 = 10000
-	// Modulo bude 10 000, coz je 100% sirky pulsu (perioda PWM)
-	// Tedy 1% = 100 "tiku" casovace.
-	TPM2->CNT = 0;	// manual doporucuje vynulovat citac pred zapisem modulo
+	// Modulo is 10 000, which is 100% of pulse width.
+	// So 1% is 100 "ticks" of the timer
+	TPM2->CNT = 0;
 	TPM2->MOD = 10000;
 
-	// Nastavime kolik je tiku casovace na 1% sirky pulsu pro lepsi
-	// citelnost zbytku programu
+	// Set the number of tick per 1% of pulse width to make the program easier to understand
 	ticksPerPercent = 100;
 
-	// Nastavit rezim casovace na PWM edge aligned, low true pulses
+	// Set timer mode to PWM edge aligned, low true pulses
 	TPM2->CONTROLS[PWM_CHANNEL].CnSC = (TPM_CnSC_MSB_MASK | TPM_CnSC_ELSA_MASK);
 
-	// Nastavit pin na PWM vystup
-	// ... povolit hodinovy signal pro port pinu
+	// Set pin to PWM output (timer channel) funciton
+	// ... enable clock for the port
 	SIM->SCGC5 |=  SIM_SCGC5_PORTB_MASK;
-	// ...Kanal casovace je funkce pinu 3 (ALT3)
+	// ...set the functino number for the pin to 3 (ALT3)
 	PORTB->PCR[PWM_PINNUMBER] = PORT_PCR_MUX(3);
 
 
-	// Zapiseme pocatecni hodnotu duty, napr. na 10%
+	// Set initial duty cycle (pulse width) to 10%
 	TPM2->CONTROLS[PWM_CHANNEL].CnV = 10 * ticksPerPercent;
 
 
-	// Nastavime casovac a spustime citani zapisem nenulove delicky (prescale)
-	// TPM_SC_PS(3): 3 je hodnota pole PS pro nastaveni delicky na 8
+	// Set the timer and start it by writing non-zero prescale
+	// TPM_SC_PS(3): 3 is the value to set prescaler to value 8
 	TPM2->SC = ( TPM_SC_CMOD(1)	| TPM_SC_PS(3) );
 
 
-	// Budeme plynule menit duty od 0 do 100%
+	// Now change the duty from 0 to 100%
 	uint32_t dutyInPercent = 0;
 	bool directionUp = true;
 	while(1)
 	{
-		// Zapis nove sirky pulsu do registru casovace
+		// Write new duty value to timer register
 		TPM2->CONTROLS[PWM_CHANNEL].CnV = dutyInPercent * ticksPerPercent;
 
 		if ( dutyInPercent == 0 ) {
@@ -136,9 +131,7 @@ int main(void)
     return 0;
 }
 
-/* delay
- Jednoducha cekaci funkce - busy wait
-*/
+
 void delay(void)
 {
 	unsigned long n = 50000L;

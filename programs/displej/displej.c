@@ -1,10 +1,9 @@
 /*
- * Ukazkovy program pro Programovani mikropocitacu
- * LDC displej na kitu.
- * Program ukazuje vypis znaku a textoveho retezce na displej.
+ * Sample program for MCU programming course
+ * LDC display on the kit
+ * Shows how to print characters and test string on the display
  *
- * Uzitecne informace:
- *
+
  *
  */
 
@@ -16,22 +15,22 @@ void delay(void);
 int main(void)
 {
 
-	// 1. Inicializujeme displej
+	// 1. Initialize display
 	LCD_initialize();
 
-	// 2. Smazeme displej. Kurzor bude na radku 1, sloupci 1.
+	// 2. Clear the display; cursor will be at line 1, column 1.
 	LCD_clear();
 
 
-	// Vypis jednoho znaku
+	// Print 1 character
 	LCD_putch('U');
-	// posun kurzoru na stred prvniho radku
+	// Move cursor to the center of first line
 	LCD_set_cursor(1,10);
 	LCD_putch('T');
 	LCD_set_cursor(1,20);
 	LCD_putch('B');
 
-	// Na dalsi radky vypiseme texty
+	// Print text string on the second, 3rd and 4th line
 	LCD_set_cursor(2,1);
 	LCD_puts("Ahoj svete!");
 

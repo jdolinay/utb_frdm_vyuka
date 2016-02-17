@@ -1,22 +1,21 @@
 /*
- * Ukazkovy program pro Programovani mikropocitacu
- * Seriova komunikace (UART).
- * Program ukazuje prijem a vysilani znaku pres modul UART0.
- * Vysila na seriovou linku text "Ahoj". Poslanim znaku "s" lze tento
- * vypis zastavit a znovu spustit.
- * Komunikacni rychlost 9600 bd.
+ * Sample program for MCU programming course
+ * Serial communication (UART).
+ * The program shows how to send and receive characters via UART0 module.
+ * It sends text "hello" to serial line. If "s" character is received, it stops/starts the
+ * sending of hello.
+ * Baud rate 9600 bd.
  *
- * POZOR: v nastaveni projektu > compiler > preprocesor musi byt CLOCK_SETUP=1
- * aby byl CPU clock 48 MHz!
+ * NOTE: In project properties > compiler > preprocesor must be defined: CLOCK_SETUP=1
+ * so that the CPU runs at 48 MHz!
  *
-  Uzitecne informace
-  1. KL25Z obsahuje 3 UART moduly: UART0, UART1 a UART2. Modul UART0 je pripojen
-   	   take na piny pro USB komunikace, lze s nim tedy komunikovat pres virtualni
-   	   seriovy port pres USB kabel zapojeny do SDA konektoru na desce FRDM.
-   	   Je dostupny na pocitaci jako "Open SDA - CDC Serial Port".
+ * Information
+   KL25Z has 3 UART modules: UART0, UART1 a UART2. Module UART0 is connected also
+   	   to the pins for USB communication; so it is available via virtual serial port
+   	   over the USB cable connected to the SDA connector on FRDM-KL25Z board.
+   	   On the desktop PC you will see it as "Open SDA - CDC Serial Port".
 
-  2. Soubor MKL25Z4.h definuje strukturu pro pristup k registrum UART (dle CMSIS)
- *
+
  */
 
 #include "MKL25Z4.h"
@@ -31,32 +30,32 @@ int main(void)
 	uint8_t vypis = 1;
 	char c;
 
-	// Nastaveni preruseni od casovace SysTick na 1 ms periodu
-	// vyuzito v delay_ms
+	// Configure SysTick timer to generate interrupt every millisecond (ms)
+	// used in delay_ms funciton below
 	SysTick_Config(SystemCoreClock / 1000u );
 
 	UART0_Initialize(BD9600);
 
 	while ( 1 )
 	{
-		// Pokud je "vypis" povolen, vypisujeme text
+		// If output is enabled, print hello
 		if (vypis )
-			UART0_puts("ahoj\n");
+			UART0_puts("Hello!\n");
 
-		// poslanim znaku s jde vypis zastavit a znovu spustit
-		// Testujeme, zda je ve vyrovnavaci pameti UART modulu prijaty znak...
+		// If we receive "s" character from PC, toggle the output enable
+		// Test if there is a received character in the UART buffer
 		if ( UART0_Data_Available() )
 		{
-			// a pokud ano, precteme jej
+			// if yes, read it
 			c = UART0_getch();
-			// odesleme znak zpet = echo
+			// send if back (echo)
 			UART0_putch(c);
 
-			// vyhodnotime precteny znak
+			// check what it is
 			if ( c == 's' )
 			{
-				vypis = !vypis;	// negujeme hodnotu "vypis"
-				UART0_puts("\nPrikaz prijat.\n");// vypiseme potvrzeni prikazu
+				vypis = !vypis;	// toggle the value of "vypis"
+				UART0_puts("\nPrikaz prijat.\n");// print confirmation
 			}
 		}
 
@@ -69,27 +68,26 @@ int main(void)
 
 
 /* delay_ms(ms)
- * Cekaci funkce s vyuzitim SysTick casovace (CMSIS).
- * SysTick timer je nastaven tak, aby jeho "tik" odpovidal 1 ms
- * pomoci SysTick_Config().
+ * WAit function with SysTick timer (CMSIS).
+ * SysTick timer is set to 1 tick = 1 ms using SysTick_Config().
  * */
 void delay_ms(uint32_t millis)
 {
 	g_delaycnt = millis;
 
-    /* Cekame az SysTick dekrementuje pocitadlo na 0 */
+    /* Wait until SysTick ISR decrements counter to 0 */
     while (g_delaycnt != 0u)
        ;
 }
 
-/* Obsluha pro SysTick interrupt.
-   Jmeno obsluzne funkce je preddefinovano.
-   Staci v nasem programu vytvorit funkci tohoto jmena a bude
-   volana ona misto vychozi prazdne funckce.
+/* ISR for SysTick interrupt.
+   The name if the ISR is pre-defined.
+   In your code just create function with this name and it will be called
+   when the interrupt occurs.
 */
 void SysTick_Handler(void)
 {
-    /* Dekrementujeme pocitadlo pouzivane funkci delay_ms */
+    /* DEcrement the counter used in delay_ms function */
     if (g_delaycnt != 0u)
     {
         g_delaycnt--;
