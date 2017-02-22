@@ -43,3 +43,12 @@ Vytvoreni noveho projektu v KDS 3.0.0
 do KDS na slozku Sources. Z nabizenych moznosti zvolit "Link" (tj. odkazy na soubory, ne zkopirovani).
 Alternativne: New Folder > typ slozky vybrat "linked folder".
 
+
+Reseni 2 jazykovych verzi v GIT:
+Branch master je cesky.
+Branch english je anglicky.
+Zmeny kodu delat na master a pak prepnout na english a udelat merge master tj. merge master na english,
+tim se promitnou zmeny.
+ 
+
+
