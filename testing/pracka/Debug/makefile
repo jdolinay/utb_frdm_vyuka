@@ -51,7 +51,7 @@ all: pracka.elf secondary-outputs
 pracka.elf: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: Cross ARM C++ Linker'
-	arm-none-eabi-g++ -mcpu=cortex-m0plus -mthumb -O0 -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections  -g3 -T "MKL25Z128xxx4_flash.ld" -Xlinker --gc-sections -L"D:/dolinay/2015/git/utb_frdm_vyuka/testing/pracka/Project_Settings/Linker_Files" -Wl,-Map,"pracka.map" -specs=nano.specs -specs=nosys.specs -o "pracka.elf" $(OBJS) $(USER_OBJS) $(LIBS)
+	arm-none-eabi-g++ -mcpu=cortex-m0plus -mthumb -O0 -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections  -g3 -T "MKL25Z128xxx4_flash.ld" -Xlinker --gc-sections -L"C:/Git/utb_frdm_vyuka/testing/pracka/Project_Settings/Linker_Files" -Wl,-Map,"pracka.map" -specs=nano.specs -specs=nosys.specs -o "pracka.elf" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
