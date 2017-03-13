@@ -41,6 +41,7 @@ static int i = 0;
 
 // Prototype
 void init(void);
+static inline int IsKeyPressed(int pin);
 
 int main(void)
 {
@@ -49,9 +50,21 @@ int main(void)
 	// Initialize the pins
 	init();
 
-	//Wait for the user to press switch SW1. When pressed, continue with next step
+	// Wait for the user to press switch SW1. When pressed, continue with the next step.
+	while ( !IsKeyPressed(SWITCH_PIN) )
+		;
 
 	// Fill TANK1 to the level H2 (medium strong coffee).
+		// Open valve SV1
+	PTE->PSOR = PTE->PSOR | (1 << SV1_PIN);
+
+	// Wait for sensor H2 to go HIGH, then close valve SV1:
+	// while ( H2 is not HIGH ) do nothing;
+	while ( (PTC->PDIR & (1 << H2_PIN )) == 0 )
+		;
+	// Close SV1
+	PTE->PCOR = PTE->PCOR | (1 << SV1_PIN);
+
 
 	// Fill TANK2 to H4 (big coffee – full cup).
 
@@ -99,6 +112,17 @@ void init(void)
 	// pull ups are not needed.
 
 }
+
+/* Return 1 if the switch on given pin is pressed, 0 if not pressed.
+ * */
+static inline int IsKeyPressed(int pin)
+{
+	if ((PTA->PDIR & (1 << pin)) == 0)
+		return 1;
+	else
+		return 0;
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // EOF
