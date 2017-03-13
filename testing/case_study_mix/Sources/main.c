@@ -30,6 +30,13 @@
 
 #include "MKL25Z4.h"
 
+// Pin names
+#define	SWITCH_PIN	(4)		// A4
+#define	SV1_PIN		(5)		// E5
+#define	H1_PIN		(3)		// D3
+#define	H2_PIN		(16)	// C16
+#define	H3_PIN		(2)		// D2
+
 static int i = 0;
 
 // Prototype
@@ -72,10 +79,22 @@ int main(void)
 void init(void)
 {
 	// Enable clock for ports A, B, C, D, E
+	SIM->SCGC5 |= (SIM_SCGC5_PORTA_MASK | SIM_SCGC5_PORTB_MASK | SIM_SCGC5_PORTC_MASK | SIM_SCGC5_PORTD_MASK | SIM_SCGC5_PORTE_MASK );
 
 	// Set pin function to GPIO
+	PORTA->PCR[SWITCH_PIN] = PORT_PCR_MUX(1);
+	PORTE->PCR[SV1_PIN] = PORT_PCR_MUX(1);
+	PORTD->PCR[H1_PIN] = PORT_PCR_MUX(1);
+	PORTC->PCR[H2_PIN] = PORT_PCR_MUX(1);
+	PORTD->PCR[H3_PIN] = PORT_PCR_MUX(1);
 
 	// Set pin direction
+	PTE->PDDR |= (1 << SV1_PIN);	// SV1 is output - valve 1
+
+	// Hx are inputs (sensors)
+	PTD->PDDR &= ~(1 << H1_PIN);
+	PTC->PDDR &= ~(1 << H2_PIN);
+	PTD->PDDR &= ~(1 << H3_PIN);
 
 	// pull ups are not needed.
 
