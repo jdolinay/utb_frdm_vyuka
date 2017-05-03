@@ -95,6 +95,14 @@ void UART0_Initialize(UART0_baudrate baudrate)
  */
  uint8_t UART0_Data_Available(void)
  {
+	 /* It may happen that new char arrives before the old
+	   one is read and overrun flag is set. Then the data ready flag is
+	   never set...
+	  ...so clear the flag and return old char; the new char is lost.
+	 */
+	 if ( UART0->S1 & UART0_S1_OR_MASK )
+	 	 UART0->S1  |= UART0_S1_OR_MASK;
+
 	 return ((UART0->S1 & UART0_S1_RDRF_MASK) != 0);
  }
 
