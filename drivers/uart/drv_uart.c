@@ -44,7 +44,8 @@ void UART0_Initialize(UART0_baudrate baudrate)
 	UART0->C3 = 0;	/* default values */
 	UART0->BDH = 0;	/* default value including 1 stop bit */
 
-	/* changes C4 and C5 to default values + sets baudrate preserving the other bits in BDH*/	f_UART0_SetBaudrate(baudrate);
+	/* changes C4 and C5 to default values + sets baudrate preserving the other bits in BDH*/
+	f_UART0_SetBaudrate(baudrate);
 
 	/* Clear Receiver overrun flag, just in case */
 	UART0->S1  |= UART0_S1_OR_MASK;
@@ -95,10 +96,10 @@ void UART0_Initialize(UART0_baudrate baudrate)
  */
  uint8_t UART0_Data_Available(void)
  {
-	 /* It may happen that new char arrives before the old
+  /* It may happen that new char arrives before the old
 	   one is read and overrun flag is set. Then the data ready flag is
 	   never set...
-	  ...so clear the flag and return old char; the new char is lost.
+	  ...so clear the flag and then test the Rx ready flag
 	 */
 	 if ( UART0->S1 & UART0_S1_OR_MASK )
 	 	 UART0->S1  |= UART0_S1_OR_MASK;
