@@ -43,3 +43,18 @@ Vytvoreni noveho projektu v KDS 3.0.0
 do KDS na slozku Sources. Z nabizenych moznosti zvolit "Link" (tj. odkazy na soubory, ne zkopirovani).
 Alternativne: New Folder > typ slozky vybrat "linked folder".
 
+
+Reseni 2 jazykovych verzi v GIT
+Branch master je cesky.
+Branch english je anglicky.
+Zmeny kodu delat na master a pak prepnout na english a udelat merge master tj. merge master na english,
+tim se promitnou zmeny.
+ Postup je: 
+  - prepnout se na branch english
+  - udelat merge (git merge master) tj. merge master into english
+  Git zobrazuje jako spojenou branch, ale ve skutecnosti jsou porad obe, akorat zobrazene jako stejne verze spolecne, ale kdyz budu menit tak menim v aktualni branch.
+  ALE asi to nepujde pro prommenne, jen pro komentare.
+ DOPORUCENI: promenne pojmenovavat anglicky! 
+ 
+
+
