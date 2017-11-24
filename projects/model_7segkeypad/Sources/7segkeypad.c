@@ -1,12 +1,22 @@
 /*
 * Driver for model of 7-segment display with keypad.
 * Ovladac pro modul 7-segmentoveho displeje s klavesnici
+* Nevyzaduje prepinani DIP switch na desce
 * Vyuziva casovac TPM1
+*
+* Klávesnice je zapojena maticovì.  Øádky jsou zapojeny jako výstupy z MCU,
+* sloupce jako vstupy. Pøi ètení stavu tlaèítek se tedy nastaví hodnota na
+* pøíslušném øádku a pak se ète stav tlaèítek z jednotlivých sloupcù.
+* Pro vstupy (sloupce) je tøeba aktivovat pull-up rezistory.
+*
+* Displej má 8 èíslic. Výbìr aktivní èíslice se provádí pomocí 3 pinù.
+* Na vybrané èíslici se pak rozsvítí pøíslušný segment zápisem do pinu pro daný segment.
+*
 */
 
 
 #include "MKL25Z4.h"
-#include "drv_gpio.h"
+//#include "drv_gpio.h"
 #include "7segkeypad.h"
 
 
@@ -49,6 +59,13 @@ int s3=16;
 int s4=17;
 int stav;
 
+/* Kontrola platneho nastaveni CPU clock
+ * Bez tohoto nastaveni nebezi casovac a nefunguje proto snimani klavesnice  */
+#if DEFAULT_SYSTEM_CLOCK != 48000000
+ #error 7segkeypad driver only supports 48 MHz clock setup. Please add CLOCK_SETUP=1 to Compiler > Preprocesor symbols.
+#endif
+
+
 // vraci kod stisknute klavesy
 int SEGKEYPAD_GetKey(void) {
 	// promennou aktualizuje casovac v ISR
@@ -86,6 +103,7 @@ void SEGKEYPAD_InitializeDisplay(void)
 	PTC->PDDR |= (1 << vyber_A2);
 
 	//nastavime piny radku a sloupcu klavesnice do rezimu GPIO
+	/*
 	PORTA->PCR[SW1] = PORT_PCR_MUX(1);
 	PORTA->PCR[SW2] = PORT_PCR_MUX(1);
 	PORTA->PCR[SW3] = PORT_PCR_MUX(1);
@@ -104,9 +122,7 @@ void SEGKEYPAD_InitializeDisplay(void)
 	PTB->PDDR |= (1 << radek2);
 	PTE->PDDR |= (1 << radek3);
 	PTE->PDDR |= (1 << radek4);
-
-	// inicializace TMP casovace
-	TPMInitialize();
+	 */
 }
 
 //inicializace klavesnice
@@ -141,18 +157,20 @@ void SEGKEYPAD_InitializeKeyboard(void)
 	PORTA->PCR[SW4] |= (PORT_PCR_PS_MASK | PORT_PCR_PE_MASK);
 
 	//Nastavíme pin radek1-radek2 jako výstup
-	pinMode(radek1, OUTPUT);
-	pinMode(radek2, OUTPUT);
-	pinMode(radek3, OUTPUT);
-	pinMode(radek4, OUTPUT);
+	//pinMode(radek1, OUTPUT);
+	//pinMode(radek2, OUTPUT);
+	//pinMode(radek3, OUTPUT);
+	//pinMode(radek4, OUTPUT);
 
 	//Nastavíme pin SW1-SW4 jako vstup s povolenym pull-up rezistorem
-	pinMode(SW1, INPUT_PULLUP);
-	pinMode(SW2, INPUT_PULLUP);
-	pinMode(SW3, INPUT_PULLUP);
-	pinMode(SW4, INPUT_PULLUP);
+	//pinMode(SW1, INPUT_PULLUP);
+	//pinMode(SW2, INPUT_PULLUP);
+	//pinMode(SW3, INPUT_PULLUP);
+	//pinMode(SW4, INPUT_PULLUP);
 
 	stav = 0;
+	// inicializace TMP casovace pro keyboard
+	TPMInitialize();
 
 }
 
@@ -401,7 +419,7 @@ int keyboard()
 		}
 
 		//priradime index pro radky dle stisknute klavesy na klavesnici
-		if (pinRead(SW1) == LOW) //ctu stav tlacitek prvního sloupce
+		if ((PTA->PDIR & (1 << SW1)) ==  0) //ctu stav tlacitek prvního sloupce
 		{
 			if (i == 0)
 				stav = 0;
@@ -412,7 +430,7 @@ int keyboard()
 			else if (i == 3)
 				stav = 3;
 		}
-		else if (pinRead(SW2) == LOW) //ctu stav tlacitek druhého sloupce
+		else if ((PTA->PDIR & (1 << SW2)) ==  0) //ctu stav tlacitek druhého sloupce
 		{
 			if (i == 0)
 				stav = 4;
@@ -423,7 +441,7 @@ int keyboard()
 			else if (i== 3)
 				stav = 7;
 		}
-		else if (pinRead(SW3) == LOW) //ctu stav tlacitek tøetího sloupce
+		else if ((PTA->PDIR & (1 << SW3)) ==  0) //ctu stav tlacitek tøetího sloupce
 		{
 			if (i == 0)
 				stav = 8;
@@ -434,7 +452,7 @@ int keyboard()
 			else if (i == 3)
 				stav = 11;
 		}
-		else if (pinRead(SW4) == LOW) //ctu stav tlacitek ètvrtého sloupce
+		else if ((PTA->PDIR & (1 << SW4)) ==  0) //ctu stav tlacitek ètvrtého sloupce
 		{
 			if (i== 0)
 				stav = 12;

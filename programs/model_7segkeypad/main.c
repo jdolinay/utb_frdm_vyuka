@@ -25,7 +25,7 @@ int main(void)
 	LCD_initialize();
 	LCD_clear();
 
-	int disp = 0;
+	int disp = 1;
 	SEGKEYPAD_SelectDisplay(disp);
 	int number = 0;
 	int key;
@@ -39,17 +39,20 @@ int main(void)
 
     	// vypis cislo na displeji
     	SEGKEYPAD_ShowNumber(number);
+    	SYSTICK_delay_ms(500);
+
+    	// posun na dalsi cislo a dalsi display
     	number++;
-    	if ( number >= 9) {
+    	if ( number > 9) {
     		number = 0;
     		disp++;
     		if ( disp > 8 )
-    			disp = 0;
+    			disp = 1;
     		SEGKEYPAD_SelectDisplay(disp);
     	}
-    	SYSTICK_delay_ms(1000);
+
     }
-    /* Never leave main */
+
     return 0;
 }
 ////////////////////////////////////////////////////////////////////////////////
