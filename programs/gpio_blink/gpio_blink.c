@@ -16,7 +16,7 @@
  *
  *
  * Note that the path for the driver needs to be in project settings;
- * "../../../drivers/gpio" Cross ARM C Compiler > Includes v nastaveni projektu.
+ * "../../../drivers/gpio" Cross ARM C Compiler > Includes.
  *
  */
 #include "MKL25Z4.h"

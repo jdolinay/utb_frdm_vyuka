@@ -27,7 +27,7 @@ volatile uint32_t g_delaycnt;
 
 int main(void)
 {
-	uint8_t vypis = 1;
+	uint8_t send = 1;
 	char c;
 
 	// Configure SysTick timer to generate interrupt every millisecond (ms)
@@ -38,24 +38,24 @@ int main(void)
 
 	while ( 1 )
 	{
-		// If output is enabled, print hello
-		if (vypis )
+		// If output is enabled, send "hello"
+		if (send )
 			UART0_puts("Hello!\n");
 
-		// If we receive "s" character from PC, toggle the output enable
+		// If we receive "s" character from PC, we toggle the "send" variable
 		// Test if there is a received character in the UART buffer
 		if ( UART0_Data_Available() )
 		{
 			// if yes, read it
 			c = UART0_getch();
-			// send if back (echo)
+			// send it back (echo)
 			UART0_putch(c);
 
-			// check what it is
+			// check what char it is
 			if ( c == 's' )
 			{
-				vypis = !vypis;	// toggle the value of "vypis"
-				UART0_puts("\nPrikaz prijat.\n");// print confirmation
+				send = !send;	// toggle the value of "send" variable
+				UART0_puts("\nCommand accepted.\n"); // send confirmation to user
 			}
 		}
 
@@ -87,7 +87,7 @@ void delay_ms(uint32_t millis)
 */
 void SysTick_Handler(void)
 {
-    /* DEcrement the counter used in delay_ms function */
+    /* Decrement the counter used in delay_ms function */
     if (g_delaycnt != 0u)
     {
         g_delaycnt--;

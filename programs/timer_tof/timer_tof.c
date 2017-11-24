@@ -60,7 +60,7 @@ int main(void)
 	TPM0->SC = ( TPM_SC_TOIE_MASK	// interrupt enabled
 			| TPM_SC_TOF_MASK	// clear any pending interrupt
 			| TPM_SC_CMOD(1)	// select internal clock source
-			| TPM_SC_PS(7) );	// prescale = 128
+			| TPM_SC_PS(7) );	// prescaler = 128
 
 
 	// Enable the interrupt also in NVIC
@@ -101,7 +101,7 @@ int main(void)
 void TPM0_IRQHandler(void)
 {
 	// static variable keeps the value between function calls
-	static uint8_t ledSviti = 0;
+	static uint8_t ledOn = 0;
 
 	// If the interrupt source is TOF
 	if (TPM0->SC & TPM_SC_TOF_MASK) {
@@ -110,13 +110,13 @@ void TPM0_IRQHandler(void)
 		TPM0->SC |= TPM_SC_TOF_MASK;
 
 		// Change LED state
-		if (ledSviti) {
+		if (ledOn) {
 			pinWrite(LD1, HIGH);	// off
-			ledSviti = 0;
+			ledOn = 0;
 		}
 		else {
 			pinWrite(LD1, LOW);		// on
-			ledSviti = 1;
+			ledOn = 1;
 		}
 	}
 

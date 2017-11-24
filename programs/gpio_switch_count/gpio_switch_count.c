@@ -35,32 +35,32 @@
 #define SWITCH_NOT_PRESSED  (0)
 
 
-// Cteni stavu tlacitka. Vraci SWITCH_PRESSED nebo SWITCH_NOT_PRESSED
+// Read switch state. Return SWITCH_PRESSED or SWITCH_NOT_PRESSED.
 int switch1_readw(void);
-// Inicializace pinu pro tlacitko
+// Initialize pin for switch SW1
 void switch1_init(void);
-// Zpozdeni pro osetreni zakmitu
+// Delay for debouncing
 void delay_debounce(void);
 
-// pocitadlo stisku tlacitka
+// Variable to hold number of switch presses
 int counter;
 
 int main(void)
 {
 	int sw_state;
 
-	// inicializace ovladace GPIO
+	// initialize GPIO driver
 	GPIO_Initialize();
 
-	// inicializace pinu pro tlacitko
+	// initialize pin for the switch
 	switch1_init();
 
-	counter = 0;	// vynulovat pocitadlo stisku
+	counter = 0;	// reset the counter of switch presses
 	while (1)
 	{
 		sw_state = switch1_readw();
-		// Pokud bylo tlacitko stisknuto (a uvolneno),
-		// inkrementujeme pocitadlo
+		// If the switch was pressed (and released),
+		// add 1 to the counter (increment the counter)
 		if ( sw_state == SWITCH_PRESSED )
 		{
 			counter++;
@@ -77,43 +77,43 @@ int main(void)
 */
 void switch1_init(void)
 {
-	// Nastavit pin pro SW1 jako vstup s povolenym pull-up rezistorem
+	// // Set the pin as input with pull up resistor enabled
 	pinMode(SW1, INPUT_PULLUP);
 }
 
 /*
  switch1_readw
- Cte stav tlacitka SW1 s osetrenim zakmitu.
- Pokud je stisknuto tlacitko, ceka na uvolneni a pak
- vrati SWITCH_PRESSED.
- Pokud neni stisknuto, vrati SWITCH_NOT_PRESSED.
+ Read switch SW1 state with debounce.
+ Returns SWITCH_NOT_PRESSED if switch is not depressed,
+ If the switch is depressed, the function wait for it to be released
+ and then return SWITCH_PRESSED.
 */
 int switch1_readw(void)
 {
     int switch_state = SWITCH_NOT_PRESSED;
     if ( pinRead(SW1) == LOW )
     {
-        // tlacitko je stisknuto
+        // switch is pressed
 
         // debounce = wait
         delay_debounce();
 
-        // znovu zkontrolovat stav tlacitka
+        // check switch state again
         if ( pinRead(SW1) == LOW )
         {
-        	// cekame na uvolneni tlacitka
+        	// wait for the switch to be released
         	while( pinRead(SW1) == LOW )
         		;
             switch_state = SWITCH_PRESSED;
         }
     }
-    // vratime stav tlacitka
+    // return the status of the switch
     return switch_state;
 }
 
 
 /* delay_debounce
- * Jednoducha cekaci funkce pro osetreni zakmitu tlacitka.
+ * Simple busy wait for debouncing.
  * */
 void delay_debounce(void)
 {

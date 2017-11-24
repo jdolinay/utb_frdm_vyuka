@@ -69,7 +69,7 @@ int main(void)
 			;
 
 		// Store result
-		uint16_t vysledek = ADC0->R[0];
+		uint16_t result = ADC0->R[0];
 
 		// Turn all LEDs off
 		pinWrite(LD1, HIGH);
@@ -77,17 +77,17 @@ int main(void)
 		pinWrite(LD3, HIGH);
 
 		// Process the result: with 10-bit result the value is 0 - 1023
-		if (vysledek > 255) {
+		if (result > 255) {
 			// LED1 on
 			pinWrite(LD1, LOW);
 		}
 
-		if (vysledek > 510) {
+		if (result > 510) {
 			// LED2 on
 			pinWrite(LD2, LOW);
 		}
 
-		if (vysledek > 765) {
+		if (result > 765) {
 			// LED3 on
 			pinWrite(LD3, LOW);
 		}
@@ -122,7 +122,7 @@ void ADCInit(void)
 	// prescaler = 8 the clock for ADC will be 24 / 8 = 3 MHz.
 	ADC0->CFG1 = ADC_CFG1_ADICLK(0)		/* ADICLK = 0 -> bus clock */
 		| ADC_CFG1_ADIV(3)				/* ADIV = 3 -> clock/8 */
-		| ADC_CFG1_MODE(2);				/* MODE = 2 -> rozliseni 10-bit */
+		| ADC_CFG1_MODE(2);				/* MODE = 2 -> resolution 10-bit */
 
 	// Write default values into other registers:
 	// Set the channel set "a", and default, longest conversion time (24 clocks)

@@ -103,6 +103,7 @@ void UART0_Initialize(UART0_baudrate baudrate)
 	 */
 	 if ( UART0->S1 & UART0_S1_OR_MASK )
 	 	 UART0->S1  |= UART0_S1_OR_MASK;
+
 	 return ((UART0->S1 & UART0_S1_RDRF_MASK) != 0);
  }
 
