@@ -1,12 +1,12 @@
 /*
  * DRV_motor.c
  *
- *  Created on: Nov 21, 2016
- *      Author: student
+ * Jednoduchy ovladac pro model DC motorku pripojeny k vyvojovemu kitu utb.
  */
 #include "drv_lcd.h"
 #include "MKL25Z4.h"
 #include "stdbool.h"
+#include "drv_systick.h"
 
 #define		Speed		(2) // cteni
 
@@ -49,6 +49,8 @@ void DCMOTOR_Init()
 
 
 // Nastaveni smeru otaceni. Vstup je 0 nebo 1.
+// 0 = rele sepnuto
+// 1 = rele vypnuto
 void DCMOTOR_setDirection(char dir)
 {
 	if(dir == 1)
@@ -68,32 +70,30 @@ void DCMOTOR_SpinON()
 	roll_ON();
 }
 
-// yastavi motor
+// zastavi motor
 void DCMOTOR_SpinOFF()
 {
 	roll_OFF();
 }
 
+// Vraci otacky za minutu
+int DCMOTOR_GetRpm() {
+	int cnt = 0;
+	long endTime = SYSTICK_millis() + 500;
 
-int DCMOTOR_LapCheck() {
-	int help = 0;
-	if (one == false) {
-		if (!((PTD->PDIR & (1 << Speed)) == 0)) {
-			if (i == 3) {
-				// vraceni casu nebo otacek z vypoctu
-				i = 1;
-				help++;
-			} else
-				i++;
-
-			one = true;
-		}
-	} else {
-		if (((PTD->PDIR & (1 << Speed)) == 0)) {
-			one = false;
+	while ((SYSTICK_millis() < endTime)) {
+		if ( (PTD->PDIR & (1 << Speed)) != 0 ) {
+			// detekovan puls
+			cnt++;
+			// cekat na konec pulsu
+			while ( ((PTD->PDIR & (1 << Speed)) != 0)
+					&& (SYSTICK_millis() < endTime) )
+				;
 		}
 	}
-	return help;
+
+	// pocet pulsu prepocteny na minutu a vydeleny poctem pulsu na otacku
+	return (cnt*2*60)/3;
 }
 
 

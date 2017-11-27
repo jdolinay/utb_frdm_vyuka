@@ -10,10 +10,7 @@ void DCMOTOR_setDirection(char dir);
 void DCMOTOR_Init();
 void DCMOTOR_SpinON();
 void DCMOTOR_SpinOFF();
-int DCMOTOR_LapCheck();
+int DCMOTOR_GetRpm();
 
-// knihovna pro ovládání motoru:
-// Obsahuje funkce nastav smer,inicializaci,toèení(SpinON),
-//netoèení(SpinOFF),zmenu smeru a funkci pro signalizaci jedné otáèky
 
 #endif /* SOURCES_DC_MOTOR_H_ */
