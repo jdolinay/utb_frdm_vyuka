@@ -3,21 +3,23 @@
  *
  * Driver for heating plant with fan which connects to UTB learning kit
  * with FRDM kl25z.
+ * Uses timer TPM0.
  */
 
 #include "MKL25Z4.h"
 #include "heat_fan.h"
 #include <stdbool.h>
-#include "drv_systick.h"
+
 
 #define PIN_VYBER_CLENU_OUTPUT (7)
 #define	PIN_PWM_SIGNAL_OUTPUT (4)
 #define PIN_PWM_TEPLOMER_INPUT (0)
 #define PIN_IMPULS_VENTILATOR_INPUT (3)
 
+static void TPMInitialize(void);
+
+
 void HEATFAN_Init(void) {
-	//Systick to measure rpm
-	SYSTICK_initialize();
 
 	//Povolime hodinovy signal pro port D
 	SIM->SCGC5 |= (SIM_SCGC5_PORTD_MASK);
@@ -59,15 +61,37 @@ uint16_t HEATFAN_GetFanRPM(void) {
 	int i;
 	uint32_t start, konec;
 	uint32_t pocetImpulzu = 0;
-	start = SYSTICK_millis();
+
+	// Init timer to overflow in 0.5 sec.
+	TPMInitialize();
+
+	// Wait for overflow and measure the pulses from rpm sensor
+	while ( !(TPM0->SC & TPM_SC_TOF_MASK) ) {
+		if ( (PTD->PDIR & (1 << PIN_IMPULS_VENTILATOR_INPUT)) == 0) {
+			// detekovan puls
+			pocetImpulzu++;
+			// cekat na konec pulsu
+			while ( ((PTD->PDIR & (1 << PIN_IMPULS_VENTILATOR_INPUT)) == 0)
+					&& !(TPM0->SC & TPM_SC_TOF_MASK) )
+				;
+		}
+	}
+	// clear TOF flag
+	TPM0->SC |= TPM_SC_TOF_MASK;
+
+	// pocet pulsu prepocteny na minutu a vydeleny poctem pulsu na otacku
+	return (pocetImpulzu*2*60)/2;
+
+
+	/*start = SYSTICK_millis();
 	for (i = 0; i < 1000; i++) {
 		if ((PTD->PDIR & (1 << PIN_IMPULS_VENTILATOR_INPUT)) == 0) {
 			pocetImpulzu++;
 		}
 	}
-	konec = SYSTICK_millis();
-	uint32_t cas = konec - start;
-	return (uint16_t) (pocetImpulzu / cas * 1000);
+	konec = SYSTICK_millis();*/
+	//uint32_t cas = konec - start;
+	//return (uint16_t) (pocetImpulzu / cas * 1000);
 }
 
 // Select heater or fan for control by the MCU
@@ -99,4 +123,48 @@ void HEATFAN_DoPWMPulse(int pwm_percents) {
 		PTD->PCOR |= (1 << PIN_PWM_SIGNAL_OUTPUT);
 	}
 }
+
+static void TPMInitialize(void)
+{
+	// Povolit clock pro TPM0
+	SIM->SCGC6 |= SIM_SCGC6_TPM0_MASK;
+
+	// Nastavit zdroj hodin pro casovac TPM (sdileno vsemi moduly TPM)
+	// Dostupne zdroje hodinoveho signalu zavisi na CLOCK_SETUP
+	// Pro CLOCK_SETUP = 1 nebo 4 je mozno pouzit OSCERCLK (8 MHz)
+	// Pro CLOCK_SETUP = 0 (vychozi v novem projektu) PLLFLLCLK (20.97152 MHz)
+	// Mozne hodnoty:
+	// 0 - clock vypnut
+	// 1 - MCGFLLCLK nebo MCGFLLCLK/2
+	// 2 - OSCERCLK
+	// 3 - MCGIRCLK  (interni generator, 32 kHz nebo 4 MHz)
+	// !!! Pozor pri zapisu do SOPT2 nespolehat na to, ze oba bity
+	// pole TPMSRC jsou vynulovany, nestaci SOPT2[TPMSRC] |= nova_hodnota;
+	// je nutno nejprve vynulovat a pak "ORovat" novou hodnotu.
+	SIM->SOPT2 &= ~SIM_SOPT2_TPMSRC_MASK;
+	SIM->SOPT2 |= SIM_SOPT2_TPMSRC(2);
+
+	// Nastavit casovac
+	// Pole PS (prescale) muze byt zmeneno pouze, kdyz je
+	// citac casovace zakazan (counter disabled), tj. pokud SC[CMOD] = 0
+	// ...nejprve zakazat counter
+	TPM0->SC = TPM_SC_CMOD(0);
+
+	// ...pockat az se zmena projevi (acknowledged in the LPTPM clock domain)
+	while (TPM0->SC & TPM_SC_CMOD_MASK)
+		;
+
+	// ... pri zakazanem citaci provest nastaveni modulo
+	// Pri clock = 8 MHz / 128 = 62500 Hz,
+	// tedy citac napocita do 62500 za 1 sekundu.
+	// Pro cekani 1 ms potrebujeme, aby citac pretekal pri hodnote 62500
+	TPM0->CNT = 0;	// manual doporucuje vynulovat citac
+	TPM0->MOD = 31250;
+
+	// ... a nakonec nastavit pozadovane hodnoty:
+	// ... delicka (prescale) = 128
+	// ... interni zdroj hodinoveho signalu
+	TPM0->SC = ( TPM_SC_CMOD(1) | TPM_SC_PS(7));
+}
+
 

@@ -7,7 +7,6 @@
 
 #include "MKL25Z4.h"
 #include "drv_lcd.h"
-#include "drv_systick.h"
 #include "heat_fan.h"
 #include <stdio.h>
 
@@ -20,14 +19,13 @@ int main(void)
 	LCD_clear();
 	LCD_puts("Start");
 
-	SYSTICK_initialize();
-
 	HEATFAN_Init();
 	HEATFAN_CtrlSignalSel(HEATFAN_Heater);
 	HEATFAN_DoPWMPulse(0);
 
     for (;;) {
     	int teplota = HEATFAN_GetTemperature();
+    	//int teplota = HEATFAN_GetFanRPM();
     	sprintf(buff, "%d", teplota);
     	LCD_clear();
     	LCD_puts(buff);
@@ -45,7 +43,6 @@ int main(void)
     	while ( n-- > 0 ) {
     		HEATFAN_DoPWMPulse(duty);
     	}
-    	//SYSTICK_delay_ms(1000);
     }
     /* Never leave main */
     return 0;

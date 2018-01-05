@@ -9,16 +9,15 @@
 #include "drv_lcd.h"
 #include "dc_motor.h"
 #include "drv_gpio.h"
-#include "drv_systick.h"
 #include <stdio.h>
 
 static int i = 0;
 char buf[16];
 
+void delay(void);
+
 int main(void)
 {
-
-	SYSTICK_initialize();
 	GPIO_Initialize();
 	pinMode(SW1, INPUT_PULLUP);
 	pinMode(SW2, INPUT_PULLUP);
@@ -43,14 +42,14 @@ int main(void)
         if ( pinRead(SW3) == LOW ) {
         	// zastaveni motoru a bezpecnostni prodleva pred zmenou smeru
         	DCMOTOR_SpinOFF();
-            SYSTICK_delay_ms(500);
+        	delay();
             DCMOTOR_setDirection(0);
         }
 
         // smer
         if ( pinRead(SW4) == LOW) {
         	DCMOTOR_SpinOFF();
-        	SYSTICK_delay_ms(500);
+        	delay();
         	DCMOTOR_setDirection(1);
         }
 
@@ -58,11 +57,17 @@ int main(void)
         sprintf(buf, "%d", rpm);
         LCD_clear();
         LCD_puts(buf);
-        SYSTICK_delay_ms(100);
+        delay();
 
     }
 
     return 0;
+}
+
+void delay(void) {
+	long n = 500000;
+	while ( n-- > 0 )
+		;
 }
 ////////////////////////////////////////////////////////////////////////////////
 // EOF
