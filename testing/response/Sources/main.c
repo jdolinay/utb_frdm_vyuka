@@ -1,5 +1,5 @@
 // Ukazka odezvy programu
-// Pri stisku tlacitka blika LED
+// Pri stisku tlacitka blikaji postupne 3 LED, pri uvolneni LED zhasnuty.
 // 5.10.2020
 ///////////////////////////////////////////////
 #include "MKL25Z4.h"
@@ -7,6 +7,14 @@
 #include "drv_systick.h"
 #include "stdbool.h"
 
+// Vyber verze kodu.
+// 1. stav blikani a nesviti; kontrola tlacitka vzdy az po bliknuti vsech LED.
+// 2. kontrola tlacitka po bliknuti kazde LED.
+// 3. nepouziva se delay - polling casu.
+// 4. rozdeleni kodu na ulohy - tasky.
+#define VERSION 1
+
+#if VERSION == 1
 #define SWITCH_PRESSED  	(1)
 #define SWITCH_NOT_PRESSED  (0)
 
@@ -64,7 +72,38 @@ int main(void) {
 	return 0;
 }
 
+#elif VERSION == 2
+#define KEY		SW1
+#define LED1    LD1
+#define LED2    LD2
+#define LED3    LD3
+#define BLINK_DELAY   1000
 
+#define ST_LED1_ON	1
+#define ST_LED2_ON	2
+#define ST_LED3_ON	3
+#define ST_OFF		4
+
+#elif VERSION == 3
+#define KEY		SW1
+#define LED1    LD1
+#define LED2    LD2
+#define LED3    LD3
+#define BLINK_DELAY   1000
+
+#define ST_LED1_ON	1
+#define ST_LED2_ON	2
+#define ST_LED3_ON	3
+#define ST_OFF		4
+#define ST_LED3_WAITING		5
+#define STAV_LED1_CEKA       5
+#define STAV_LED2_CEKA       6
+#define STAV_LED3_CEKA       7
+#elif VERSION == 4
+#endif
+
+/////////////////////////////////////////////////////////
+// pomocne funkce
 void LED_control(bool d1, bool d2, bool d3)
 {
     pinWrite(LED1, !d1);
