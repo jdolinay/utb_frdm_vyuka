@@ -5,14 +5,17 @@
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
 ../Sources/drv_gpio.c \
+../Sources/drv_systick.c \
 ../Sources/main.c 
 
 OBJS += \
 ./Sources/drv_gpio.o \
+./Sources/drv_systick.o \
 ./Sources/main.o 
 
 C_DEPS += \
 ./Sources/drv_gpio.d \
+./Sources/drv_systick.d \
 ./Sources/main.d 
 
 

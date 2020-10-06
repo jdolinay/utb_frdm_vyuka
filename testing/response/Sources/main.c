@@ -4,6 +4,7 @@
 ///////////////////////////////////////////////
 #include "MKL25Z4.h"
 #include "drv_gpio.h"
+#include "drv_systick.h"
 #include "stdbool.h"
 
 #define SWITCH_PRESSED  	(1)
@@ -22,10 +23,11 @@ int state = ST_OFF;
 
 int switch1_read(void);
 void delay_debounce(void);
-void LED_control(ool d1, bool d2, bool d3);
+void LED_control(bool d1, bool d2, bool d3);
 int main(void) {
-	// inicializace ovladace GPIO
+	// inicializace ovladace pinu a delay
 	GPIO_Initialize();
+	SYSTICK_initialize();
 
 	pinMode(SW1, INPUT_PULLUP);
 	pinMode(LED1, OUTPUT);
@@ -36,23 +38,23 @@ int main(void) {
 	pinWrite(LED3, HIGH);
 
 	while (1) {
-		if (switch1_read() == )
-			stav = ST_EFFECT;
+		if (switch1_read() == SWITCH_PRESSED)
+			state = ST_EFFECT;
 		else
-			stav = ST_OFF;
+			state = ST_OFF;
 
-		switch (stav) {
+		switch (state) {
 		case ST_OFF:
-			ZapniLED(false, false, false);
+			LED_control(false, false, false);
 			break;
 
-		case ST_OFF:
-			ZapniLED(true, false, false);
-			delay(PRODLEVA);
-			ZapniLED(false, true, false);
-			delay(PRODLEVA);
-			ZapniLED(false, false, true);
-			delay(PRODLEVA);
+		case ST_EFFECT:
+			LED_control(true, false, false);
+			SYSTICK_delay_ms(BLINK_DELAY);
+			LED_control(false, true, false);
+			SYSTICK_delay_ms(BLINK_DELAY);
+			LED_control(false, false, true);
+			SYSTICK_delay_ms(BLINK_DELAY);
 			break;
 		}	// switch
 
@@ -65,9 +67,9 @@ int main(void) {
 
 void LED_control(bool d1, bool d2, bool d3)
 {
-    digitalWrite(LED1, !d1);
-    digitalWrite(LED2, !d2);
-    digitalWrite(LED3, !d3);
+    pinWrite(LED1, !d1);
+    pinWrite(LED2, !d2);
+    pinWrite(LED3, !d3);
 }
 
 /*
@@ -91,7 +93,7 @@ int switch1_read(void)
     	// tlacitko je stisknuto
 
         // debounce = wait
-        delay_debounce();
+    	SYSTICK_delay_ms(50);
 
         // znovu zkontrolovat stav tlacitka
         if ( pinRead(SW1) == LOW )
@@ -103,16 +105,6 @@ int switch1_read(void)
     return switch_state;
 }
 
-
-/* delay_debounce
- * Jednoducha cekaci funkce pro osetreni zakmitu tlacitka.
- * */
-void delay_debounce(void)
-{
-	unsigned long n = 100000L;
-	while ( n-- )
-		;
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 // EOF
