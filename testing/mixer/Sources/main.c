@@ -4,13 +4,12 @@
  * prikazy jako "sv1on" a "sv1off" viz cliProcessCommand.
  * Verze 2 je sekvenci napusteni a vypusteni. Aby se aktivovala verze 2
  * je nutno zakomentovat volani verze 1 v main!
-*/
+ */
 
 #include "MKL25Z4.h"
 #include "drv_uart.h"
 #include <stdbool.h>
 #include <string.h>     // pro funkci strcmp()
-
 
 // max length of a command
 #define   MAX_COMMAND_LEN       (7)
@@ -21,7 +20,6 @@ bool cliBuildCommand(char nextChar);
 
 // buffer for storing the command
 char G_CommandBuffer[MAX_COMMAND_LEN + 1];
-
 
 // Model vyuziva piny na portech B, C, D, E
 // Makra pro nastaveni vystupu
@@ -38,8 +36,6 @@ char G_CommandBuffer[MAX_COMMAND_LEN + 1];
 #define	MICHADLO_ON()		PTD->PSOR |= (1 << 0)
 #define	MICHADLO_OFF()		PTD->PCOR |= (1 << 0)
 
-
-
 // Makra pro testovani vstupu
 #define	IS_H1()			(PTD->PDIR & (1 << 3))
 #define	IS_H2()			(PTC->PDIR & (1 << 16))
@@ -53,8 +49,7 @@ char G_CommandBuffer[MAX_COMMAND_LEN + 1];
 // Prototypy funkci definovanych nize
 void delay(void);
 void cli_mixer(void);	// ovladani modelu pres UART
-
-
+void cli_univerzal();	// UART ovladani pres nazvy pinu
 
 int main(void) {
 	// 1. Povolime hodinovy signal pro porty
@@ -105,21 +100,24 @@ int main(void) {
 
 	/* Zakomentovanim cli_mixer() se pouzije verze 2 */
 
+	/* VERZE s ovladanim podle nazvu pinu */
+	cli_univerzal();
+
 	/* VERZE 1 s ovladanim pres seriovou linku*/
 	cli_mixer();
 
 	/* VERZE 2 s napustenim a vypustenim */
-	while(1) {
+	while (1) {
 
 		// nadrz 1
 		SV1_ON();
-		while( !IS_H3() )
+		while (!IS_H3())
 			;
 		SV1_OFF();
 		delay();
 
 		SV1_ON();
-		while( !IS_H2() )
+		while (!IS_H2())
 			;
 		SV1_OFF();
 		delay();
@@ -164,7 +162,7 @@ int main(void) {
 
 		// Napustit mixer
 		SV4_ON();
-		while ( IS_H3() )
+		while ( IS_H3())
 			;
 		delay();
 		SV4_OFF();
@@ -192,10 +190,9 @@ int main(void) {
 /* delay
  * Jednoducha cekaci funkce - busy wait
  * */
-void delay(void)
-{
+void delay(void) {
 	unsigned long n = 2000000L;
-	while ( n-- )
+	while (n--)
 		;
 }
 
@@ -232,6 +229,101 @@ void cli_mixer(void) {
 
 }
 
+// UART ovladani pres nazvy pinu
+void cli_univerzal(void) {
+	char rcvChar;
+	bool commandReady;
+
+	// Inicializace serioveho rozhrani UART
+	UART0_Initialize(BD9600);
+
+	while (1) {
+		// Cekame na prichod znaku
+		rcvChar = UART0_getch();
+
+		// Odesleme znak zpet na seriovou linku (echo)
+		UART0_putch(rcvChar);
+
+		/* Build a new command. */
+		commandReady = cliBuildCommand(rcvChar);
+
+		/* Call the CLI command processing routine to verify the command entered
+		 * and execute the command; then output a new prompt. */
+		if (commandReady) {
+			commandReady = false;
+			cliPinsProcessCommand();
+			UART0_putch('>');
+		}
+	}
+}
+
+// verze s prikazy podle cisel pinu
+void cliPinsProcessCommand(void) {
+	if (strcmp(G_CommandBuffer, "e0") == 0) {
+
+		// blink with E0
+		PTE->PSOR |= (1 << 0);
+		delay();
+		PTE->PCOR |= (1 << 0);
+		delay();
+		UART0_puts("\n\rE0 done\n\r");
+
+	} else if (strcmp(G_CommandBuffer, "e1") == 0) {
+		PTE->PSOR |= (1 << 1);
+		delay();
+		PTE->PCOR |= (1 << 1);
+		delay();
+
+		UART0_puts("\n\rE1 done\n\r");
+
+	} else if (strcmp(G_CommandBuffer, "e4") == 0) {
+
+		PTE->PSOR |= (1 << 4);
+		delay();
+		PTE->PCOR |= (1 << 4);
+		delay();
+
+		UART0_puts("\n\rE4 done\n\r");
+
+	} else if (strcmp(G_CommandBuffer, "e3") == 0) {
+
+
+		UART0_puts("\n\rE3 \n\r");
+
+	} else if (strcmp(G_CommandBuffer, "e5") == 0) {
+
+		UART0_puts("\n\rE5 \n\r");
+
+	} else if (strcmp(G_CommandBuffer, "c1") == 0) {
+
+
+		UART0_puts("\n\rT3 off\n\r");
+
+	} else if (strcmp(G_CommandBuffer, "b1") == 0) {
+
+
+		UART0_puts("\n\rSV4 on\n\r");
+
+	} else if (strcmp(G_CommandBuffer, "d0") == 0) {
+
+		SV4_OFF();
+		UART0_puts("\n\rSV4 off\n\r");
+
+	} else if (strcmp(G_CommandBuffer, "r") == 0) {
+		// read inputs and display result
+
+		UART0_puts("\n\r todo \n\r");
+
+	} else if (strcmp(G_CommandBuffer, "ver") == 0) {
+		/* send our version info */
+		UART0_puts("\n\rMixer tester version 1.0\n\r");
+
+	} else {
+		UART0_puts("\n\rUnknown command\n\r");
+	}
+
+}
+
 /**********************************************************************
  *
  * Function:    cliProcessCommand
@@ -245,8 +337,7 @@ void cli_mixer(void) {
  * Returns:     None.
  *
  **********************************************************************/
-void cliProcessCommand(void)
-{
+void cliProcessCommand(void) {
 	if (strcmp(G_CommandBuffer, "sv1on") == 0) {
 
 		SV1_ON();
@@ -317,8 +408,6 @@ void cliProcessCommand(void)
 
 }
 
-
-
 /**********************************************************************
  *
  * Function:    cliBuildCommand
@@ -331,39 +420,34 @@ void cliProcessCommand(void)
  * Returns:     1 if a command is complete, otherwise 0.
  *
  **********************************************************************/
-bool cliBuildCommand(char nextChar)
-{
-    static char idx = 0;
+bool cliBuildCommand(char nextChar) {
+	static char idx = 0;
 
-    /* Don't store any new line characters or spaces. */
-    if ((nextChar == '\n') || (nextChar == ' ') || (nextChar == '\t'))
-        return 0;
-    /* The completed command has been received. Replace the final carriage
-     * return character with a NULL character to help with processing the
-     * command. */
-    if (nextChar == '\r')
-    {
-        G_CommandBuffer[idx] = '\0';
-        idx = 0;
-        return true;
-    }
+	/* Don't store any new line characters or spaces. */
+	if ((nextChar == '\n') || (nextChar == ' ') || (nextChar == '\t'))
+		return 0;
+	/* The completed command has been received. Replace the final carriage
+	 * return character with a NULL character to help with processing the
+	 * command. */
+	if (nextChar == '\r') {
+		G_CommandBuffer[idx] = '\0';
+		idx = 0;
+		return true;
+	}
 
-    /* Store the received character in the command buffer. */
-    G_CommandBuffer[idx] = nextChar;
-    idx++;
+	/* Store the received character in the command buffer. */
+	G_CommandBuffer[idx] = nextChar;
+	idx++;
 
-    /* If the command is too long, reset the index and process
-     * the current command buffer. */
-    if (idx > MAX_COMMAND_LEN)
-    {
-        idx = 0;
-        return 1;
-    }
+	/* If the command is too long, reset the index and process
+	 * the current command buffer. */
+	if (idx > MAX_COMMAND_LEN) {
+		idx = 0;
+		return 1;
+	}
 
-    return false;
+	return false;
 }
-
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // EOF
