@@ -51,10 +51,11 @@ void delay(void);
 void cli_mixer(void);	// ovladani modelu pres UART
 void cli_univerzal();	// UART ovladani pres nazvy pinu
 
+
 int main(void) {
 	// 1. Povolime hodinovy signal pro porty
-	SIM->SCGC5 |= (SIM_SCGC5_PORTB_MASK | SIM_SCGC5_PORTC_MASK |
-	SIM_SCGC5_PORTD_MASK | SIM_SCGC5_PORTE_MASK);
+	SIM->SCGC5 |= (SIM_SCGC5_PORTB_MASK | SIM_SCGC5_PORTB_MASK
+			| SIM_SCGC5_PORTC_MASK | SIM_SCGC5_PORTD_MASK | SIM_SCGC5_PORTE_MASK);
 
 	// 2. Nastavime funkci pinu na GPIO
 	PORTE->PCR[0] = PORT_PCR_MUX(1);	// E0 = SV4
@@ -72,6 +73,17 @@ int main(void) {
 	PORTC->PCR[7] = PORT_PCR_MUX(1);	// C7 = H6
 	PORTC->PCR[6] = PORT_PCR_MUX(1);	// C6 = H8
 	PORTC->PCR[5] = PORT_PCR_MUX(1);	// C5 = H4
+
+	// Dalsi piny vyuzite jen pro cli_univerzal
+	PORTE->PCR[3] = PORT_PCR_MUX(1);	// vystup E3
+	PORTB->PCR[1] = PORT_PCR_MUX(1);	// vystup B1
+	PORTD->PCR[5] = PORT_PCR_MUX(1);	// vstup
+	PORTC->PCR[7] = PORT_PCR_MUX(1);	// vstup
+
+	PTE->PDDR |= (1 << 3);
+	PTB->PDDR |= (1 << 1);
+	PTD->PDDR &= ~(1 << 5);
+	PTC->PDDR &= ~(1 << 7);
 
 	// 3. Nastavime prislusne piny jako vystupy a vstupy
 	// vystupy
@@ -229,6 +241,31 @@ void cli_mixer(void) {
 
 }
 
+////////////////////////////////////////////////////////////
+typedef struct input_pin_t {
+	char name[7];
+	uint8_t number;
+	GPIO_Type* gpio;
+} Input_Pin;
+
+static Input_Pin  inputs[] = {
+		{"D2=", 2, PTD },
+		{"D3=", 3, PTD},
+		{"D4=", 4, PTD},
+		{"D5=", 5, PTD},
+		{"C5=", 5, PTC},
+		{"C6=", 6, PTC},
+		{"C7=", 7, PTC},
+		{"C16=", 16, PTC},
+		{"A4=", 4, PTA},
+
+		{"", 0, NULL},
+};
+
+void print_inputs(void);
+void cliPinsProcessCommand(void);
+static inline int IsInputActive(const Input_Pin* pinInfo);
+
 // UART ovladani pres nazvy pinu
 void cli_univerzal(void) {
 	char rcvChar;
@@ -311,7 +348,7 @@ void cliPinsProcessCommand(void) {
 
 	} else if (strcmp(G_CommandBuffer, "r") == 0) {
 		// read inputs and display result
-
+		print_inputs();
 		UART0_puts("\n\r todo \n\r");
 
 	} else if (strcmp(G_CommandBuffer, "ver") == 0) {
@@ -323,6 +360,34 @@ void cliPinsProcessCommand(void) {
 	}
 
 }
+
+
+
+// Test pin, return 0 if pin is low, 1 if high.
+static inline int IsInputActive(const Input_Pin* pinInfo)
+{
+	if ((pinInfo->gpio->PDIR & (1 << pinInfo->number)))
+		return 1;
+	else
+		return 0;
+}
+
+// vypis stav vstupu na seriovou linku
+void print_inputs(void) {
+	UART0_puts("\n\rInputs: \n\r");
+	uint8_t i = 0;
+	while(inputs[i].gpio != NULL ) {
+		i++;
+		UART0_puts(inputs[i].name);
+		UART0_puts(" ");
+		if ( IsInputActive(&inputs[i]) )
+			UART0_puts("1, ");
+		else
+			UART0_puts("0, ");
+	}
+	UART0_puts("\n\rInputs done\n\r");
+}
+
 
 /**********************************************************************
  *
