@@ -51,7 +51,7 @@ all: response.elf secondary-outputs
 response.elf: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: Cross ARM C++ Linker'
-	arm-none-eabi-g++ -mcpu=cortex-m0plus -mthumb -O0 -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections  -g3 -T "MKL25Z128xxx4_flash.ld" -Xlinker --gc-sections -L"C:/Users/jan/git/utb_frdm_vyuka/testing/response/Project_Settings/Linker_Files" -Wl,-Map,"response.map" -specs=nano.specs -specs=nosys.specs -o "response.elf" $(OBJS) $(USER_OBJS) $(LIBS)
+	arm-none-eabi-g++ -mcpu=cortex-m0plus -mthumb -O0 -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections  -g3 -T "MKL25Z128xxx4_flash.ld" -Xlinker --gc-sections -L"D:/git/utb_frdm_vyuka/testing/response/Project_Settings/Linker_Files" -Wl,-Map,"response.map" -specs=nano.specs -specs=nosys.specs -o "response.elf" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
