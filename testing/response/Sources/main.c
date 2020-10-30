@@ -12,7 +12,7 @@
 #include "MKL25Z4.h"
 #include "drv_gpio.h"
 #include "drv_systick.h"
-#include "stdbool.h"
+#include <stdbool.h>	// kvuli typu bool
 
 // Vyber verze kodu.
 // 1. stav blikani a nesviti; kontrola tlacitka vzdy az po bliknuti vsech LED.
@@ -245,7 +245,6 @@ int main(void) {
 // Program je vylepsen rozdelenim na jednotlive ulohy - tasky.
 // Z pohledu odezvy je chovani stejne jako u verze 3, ale struktura programu je
 // prehlednejsi a snadneji by se rozsiroval o dalsi cinnosti.
-#include <stdbool.h>	// kvuli typu bool
 
 // Stavy programu
 #define ST_LED1_ON		1
@@ -273,7 +272,7 @@ int main(void) {
 
 		TaskSwitches();
 		TaskEffect();
-		//TaskGreenLed();
+		TaskGreenLed();
 
 	}	// while
 
@@ -471,6 +470,59 @@ int switch1_read(void)
     // vratime stav tlacitka
     return switch_state;
 }
+
+/////////////////////////////////////////////////////////////////////////////
+// Spaghetti version of the code
+#if VERSION == 5
+// Zlepseni odezvy pridanim kontroly tlacitka do stavu pro efekt.
+// Odezva se sice zlepsi, ale struktura programu je neprehledna.
+
+// Stavy programu
+#define ST_EFFECT	1
+#define ST_OFF		2
+
+int state = ST_OFF;
+
+
+int main(void) {
+	// inicializace ovladace pinu a delay
+	init();
+
+	while (1) {
+		if (switch1_read() == SWITCH_PRESSED)
+			state = ST_EFFECT;
+		else
+			state = ST_OFF;
+
+		switch (state) {
+		case ST_OFF:
+			LED_control(false, false, false);
+			break;
+
+		case ST_EFFECT:
+			LED_control(true, false, false);
+			SYSTICK_delay_ms(BLINK_DELAY);
+			// Pokud neni stisknuto tlacitko prerus sekvenci
+			if ( switch1_read() != SWITCH_PRESSED )
+				break;
+			LED_control(false, true, false);
+			SYSTICK_delay_ms(BLINK_DELAY);
+			// Pokud neni stisknuto tlacitko prerus sekvenci
+			if ( switch1_read() != SWITCH_PRESSED )
+				break;
+			LED_control(false, false, true);
+			SYSTICK_delay_ms(BLINK_DELAY);
+			break;
+		}	// switch
+
+	}	// while
+
+	/* Never leave main */
+	return 0;
+}
+
+#endif
+
 
 
 ////////////////////////////////////////////////////////////////////////////////
