@@ -113,7 +113,7 @@ int main(void) {
 	/* Zakomentovanim cli_mixer() se pouzije verze 2 */
 
 	/* VERZE s ovladanim podle nazvu pinu */
-	cli_univerzal();
+	//cli_univerzal();
 
 	/* VERZE 1 s ovladanim pres seriovou linku*/
 	cli_mixer();
