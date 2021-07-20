@@ -7,6 +7,8 @@
  * Rozsah akcelerometru je +/- 2 g, takže rozsah hodnot je +/- cca 127
  * Na displeji jsou cisla v rozsahu +/-65 coz je 1g.
  *
+ * Pouziva se modul I2C0, pro teplomer a vlhkomer je modul I2C1
+ *
  * Projekt i2c_accel_v2 je verze s jednoduchym ovladacem I2C.
  * Pro vypis na displej kitu je treba vlozit take ovladac LCD.
  * Pro funkci delay_ms je vlozen ovladac systick.
@@ -101,7 +103,7 @@ int main (void) {
 uint8_t MMA8451_Init(void)
 {
 	//set active mode, 8 bit samples (by F_READ mask) and 800 Hz ODR
-	i2c_write_byte(MMA_ADDR, REG_CTRL1, (MMA8451_F_READ_BIT_MASK|MMA8451_ACTIVE_BIT_MASK) ); //0x01);
+	i2c_write_byte(MMA_ADDR, REG_CTRL1, (MMA8451_F_READ_BIT_MASK | MMA8451_ACTIVE_BIT_MASK) );
 	return 1;
 }
 
