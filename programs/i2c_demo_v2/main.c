@@ -20,6 +20,15 @@
  *  "../../../drivers/systick"
  * (V teto ukazce relativni cesta vztazena k umisteni projektu v utb_frdm_vyuka)
  *
+ *
+ * LOG:
+ * 21.7.21 - problem mohl byt i v clock ktery byl nastaven na cca 450 kHz misto 100 kHz.
+ * - zkusit humidity s repeated read verzi, pripadne odkomentovanou puvodni verzi, ta jeste nezkousena
+ *  a mohl byt problem v lock detect, ktery resetuje v repeated read.
+ *   pripadne rozsvitit led pri lock.
+ *  - teplota - podle datasheet se zda ze je spravne.
+ *  - jaka je frekvence iic nastavena v kodu?
+ *
  */
 
 #include "MKL25Z4.h"

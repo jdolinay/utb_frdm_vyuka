@@ -74,7 +74,7 @@ int main (void) {
 	i2c_init();
 	if ( !MMA8451_Init() ) {
 		while (1)
-			;	// Error initializing accellerometer
+			;	// Error initializing accelerometer
 	}
 
 	// Mereni
@@ -112,7 +112,7 @@ uint8_t MMA8451_GetRaw8XYZ(int8_t xyz[3])
 	int i;
 
 	i2c_start();
-	i2c_read_setup(MMA_ADDR , REG_XHI);
+	i2c_read_setup(MMA_ADDR, REG_XHI);
 
 	// Read bytes in repeated mode
 	for( i=0; i<2; i++)	{

@@ -22,8 +22,22 @@ void i2c_init(void)
 	//baud = bus freq/(scl_div+mul)
  	//~400k = 24M/(64); icr=0x12 sets scl_div to 64
 
- 	I2C1->F = (I2C_F_ICR(0x10) | I2C_F_MULT(0));
-		
+ 	I2C1->F = (I2C_F_ICR(0x11) | I2C_F_MULT(2));
+	// jd: pozor vyse ma byt krat a ne plus - spravne dle datasheet:
+ 	// baud = bus freq/(scl_div x mul)
+ 	// MULT(0) > mul=1,
+ 	// SCL divider value se najde v tabulce, pro
+ 	// ICR=0x10 je SCL divider 48
+ 	// ICR=0x12 > SCL divider 64
+ 	// max ICR=0x1f > 240
+ 	// Vstup pro I2C je "bus clock".
+ 	// Pro CLOCK_SETUP 0 je bus clock 20.97152 MHz
+ 	// Pro CLOCK_SETUP 1 je bus clock 24 MHz
+ 	// baud = 20 971 520 / (48) = 1 310 720
+ 	// Pro 100 kHz a CLOCK_SETUP = 0 je treba delit bus/210.
+ 	// pouzit mult=4 a ICR=11 > scl_div=56 tj.
+ 	// baud = 20 971 520 / (56*4=224) = 93,6 kHz
+
 	//enable i2c and set to master mode
 	I2C1->C1 |= (I2C_C1_IICEN_MASK);
 	
@@ -192,11 +206,12 @@ void i2c_write_byte(uint8_t dev, uint8_t address, uint8_t data)
 }
 
 // jd: write address with no data
+// - for humidity sensor Measurement request command
 void i2c_write_nobyte(uint8_t dev)
 {
 
-	I2C_TRAN;							/*set to transmit mode */
-	I2C_M_START;					/*send start	*/
+	I2C_TRAN;					/*set to transmit mode */
+	I2C_M_START;				/*send start	*/
 	I2C1->D = dev;			  /*send dev address	*/
 	I2C_WAIT						  /*wait for ack */
 
@@ -225,30 +240,45 @@ void i2c_read_bytes(uint8_t dev, uint8_t* buff, uint8_t size)
 	uint8_t data;
 	uint8_t index = 0;
 
-	//I2C_TRAN;							/*set to transmit mode */
+	I2C_TRAN;						/*set to transmit mode */
 	I2C_M_START;					/*send start	*/
 	I2C1->D = (dev|0x1);	 		/*send dev address (read)	*/
 	I2C_WAIT						/*wait for completion */
 
 	I2C_REC;						   /*set to recieve mode */
 
+	// verze primo cteni, nefunkcni
+#if 0
 	//data = I2C1->D;					/*dummy read	*/
 	//I2C_WAIT						/*wait for completion */
 	while ( size > 1 ) {
-		buff[index] = I2C1->D;
+		lock_detect = 0;
+
+		//buff[index] = I2C1->D;
 		if ( size > 1 )
 			ACK;
 		else {
 			NACK;	// send NACK for last byte
 		}
+
+		buff[index] = I2C1->D;
 		I2C_WAIT
 		//data = I2C1->D;					/*dummy read	*/
 		//I2C_WAIT						/*wait for completion */
 		index++;
 		size--;
 	}
-	index++;
+	//index++;
 
 	I2C_M_STOP;							/*send stop	*/
 	buff[index] = I2C1->D;
+#endif
+
+	// VERZE s repeated_read
+	for( index=0; index<3; index++)	{
+		buff[index] = i2c_repeated_read(0);
+	}
+	// Read last byte ending repeated mode
+	buff[index] = i2c_repeated_read(1);
+
 }
