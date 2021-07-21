@@ -22,21 +22,21 @@ void i2c_init(void)
 	//baud = bus freq/(scl_div+mul)
  	//~400k = 24M/(64); icr=0x12 sets scl_div to 64
 
- 	I2C1->F = (I2C_F_ICR(0x11) | I2C_F_MULT(2));
+ 	I2C1->F = (I2C_F_ICR(0x1E) | I2C_F_MULT(0));
 	// jd: pozor vyse ma byt krat a ne plus - spravne dle datasheet:
  	// baud = bus freq/(scl_div x mul)
- 	// MULT(0) > mul=1,
+ 	// MULT(0) > mul=1, MUL(1) > mul=2
  	// SCL divider value se najde v tabulce, pro
  	// ICR=0x10 je SCL divider 48
  	// ICR=0x12 > SCL divider 64
+ 	// ICR=0x1E > SCL divider 192
  	// max ICR=0x1f > 240
  	// Vstup pro I2C je "bus clock".
  	// Pro CLOCK_SETUP 0 je bus clock 20.97152 MHz
  	// Pro CLOCK_SETUP 1 je bus clock 24 MHz
  	// baud = 20 971 520 / (48) = 1 310 720
  	// Pro 100 kHz a CLOCK_SETUP = 0 je treba delit bus/210.
- 	// pouzit mult=4 a ICR=11 > scl_div=56 tj.
- 	// baud = 20 971 520 / (56*4=224) = 93,6 kHz
+ 	// baud = 20 971 520 / (192) = 110 kHz
 
 	//enable i2c and set to master mode
 	I2C1->C1 |= (I2C_C1_IICEN_MASK);

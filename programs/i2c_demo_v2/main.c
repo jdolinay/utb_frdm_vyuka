@@ -22,7 +22,8 @@
  *
  *
  * LOG:
- * 21.7.21 - problem mohl byt i v clock ktery byl nastaven na cca 450 kHz misto 100 kHz.
+ * 21.7.21 - problem mohl byt i v clock ktery byl nastaven na cca 450 kHz misto 100 kHz. Dle datasheet
+ *  je frekvence max 400 kHz pro oba senzory, pro vlhkomer navic i min frekvence 100 kHz.
  * - zkusit humidity s repeated read verzi, pripadne odkomentovanou puvodni verzi, ta jeste nezkousena
  *  a mohl byt problem v lock detect, ktery resetuje v repeated read.
  *   pripadne rozsvitit led pri lock.
