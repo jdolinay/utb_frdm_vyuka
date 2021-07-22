@@ -27,6 +27,8 @@ uint8_t i2c_repeated_read(uint8_t);
 	
 uint8_t i2c_read_byte(uint8_t dev, uint8_t address);
 void i2c_write_byte(uint8_t dev, uint8_t address, uint8_t data);
+
+// jd
 void i2c_write_nobyte(uint8_t dev);
 void i2c_write_reg(uint8_t dev, uint8_t address);
 void i2c_read_bytes(uint8_t dev, uint8_t* buff, uint8_t size);

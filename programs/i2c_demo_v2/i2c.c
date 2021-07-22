@@ -255,14 +255,18 @@ void i2c_read_bytes(uint8_t dev, uint8_t* buff, uint8_t size)
 		lock_detect = 0;
 
 		//buff[index] = I2C1->D;
-		if ( size > 1 )
+		ACK;
+		/*if ( size > 1 )
 			ACK;
 		else {
 			NACK;	// send NACK for last byte
-		}
+		}*/
+
+		data = I2C1->D;				/*dummy read	*/
+		I2C_WAIT					/*wait for completion */
 
 		buff[index] = I2C1->D;
-		I2C_WAIT
+		//I2C_WAIT
 		//data = I2C1->D;					/*dummy read	*/
 		//I2C_WAIT						/*wait for completion */
 		index++;
@@ -270,15 +274,20 @@ void i2c_read_bytes(uint8_t dev, uint8_t* buff, uint8_t size)
 	}
 	//index++;
 
+	NACK;
+	data = I2C1->D;				/*dummy read	*/
+	I2C_WAIT					/*wait for completion */
 	I2C_M_STOP;							/*send stop	*/
 	buff[index] = I2C1->D;
 #endif
 
+#if 1
 	// VERZE s repeated_read
 	for( index=0; index<3; index++)	{
 		buff[index] = i2c_repeated_read(0);
 	}
 	// Read last byte ending repeated mode
 	buff[index] = i2c_repeated_read(1);
+#endif
 
 }

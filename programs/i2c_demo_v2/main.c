@@ -28,7 +28,10 @@
  *  a mohl byt problem v lock detect, ktery resetuje v repeated read.
  *   pripadne rozsvitit led pri lock.
  *  - teplota - podle datasheet se zda ze je spravne.
- *  - jaka je frekvence iic nastavena v kodu?
+ *  22.7. - nefunguje ani T ani H.
+ *  Pozor jeho driver vyzaduje adresu orotovanu o 1 vlevo, akcelerometr ma adresu 0x1D ale v jeho
+ *  ukazce je 0x3A tj. aby byla adresa jako 1 byte kde je v hornich 7 bitech.
+ *  Teplomer po rotaci adresy o 1 funguje.
  *
  */
 
@@ -41,8 +44,8 @@
 
 // Adresy obvodu na I2C sbernici
 #define I2C_ADR_RTC (0b1010000)
-#define I2C_ADR_TEMP_SENSOR (0b1001000)
-#define I2C_ADR_HMDT_SENSOR (0b0100111)
+#define I2C_ADR_TEMP_SENSOR ((0b1001000)<<1)
+#define I2C_ADR_HMDT_SENSOR ((0b0100111)<<1)
 
 // Registry teplotniho snimace LM75
 #define LM75_REG_TEMP  (0)
@@ -71,17 +74,21 @@ int main (void)
 	// Inicializace ovladace I2C
 	i2c_init();
 
+	//const uint8_t cmd_lm75_init[] = {0b00000001, 0b00000000};
+	//i2c_write_byte(I2C_ADR_TEMP_SENSOR, cmd_lm75_init[0], cmd_lm75_init[1]);
+	SYSTICK_delay_ms(1000);
+
 	// Mereni
 	while(1) {
 		humidity = MeasureHumidity();
-		//temperature = MeasureTemperature();
+		temperature = MeasureTemperature();
 		SYSTICK_delay_ms(1000);
 		LCD_clear();
 		sprintf(buffer, "H: %d %%", humidity);
 		LCD_puts(buffer);
-		//sprintf(buffer, "T: %d.%d C", temperature/10, temperature%10);
-		//LCD_set_cursor(2,1);
-		//LCD_puts(buffer);
+		sprintf(buffer, "T: %d.%d C", temperature/10, temperature%10);
+		LCD_set_cursor(2,1);
+		LCD_puts(buffer);
 	}
 
 	return 0;
@@ -159,7 +166,7 @@ uint32_t MeasureTemperature(void)
 	uint32_t temperature;
 
 	// Inicializace teplotniho snimace
-	//i2c_start();
+	//i2c_start();	// je soucast write_byte
 	i2c_write_byte(I2C_ADR_TEMP_SENSOR, cmd_lm75_init[0], cmd_lm75_init[1]);
 	//Driver_I2C1.MasterTransmit(I2C_ADR_TEMP_SENSOR, cmd_lm75_init, 2, false);
 

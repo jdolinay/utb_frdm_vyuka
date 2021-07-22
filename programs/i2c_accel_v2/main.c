@@ -34,6 +34,8 @@
 #include "drv_systick.h"	// pro delay_ms
 
 // Definice pro akcelerometr
+// Pozor adresa je 0x1D ale ovladac I2C predpoklada adresu v hornich 7 bitech
+// tj. rotovanou o 1 bit vlevo - proto je zde 0x3A
 #define MMA_ADDR 0x3A
 
 #define REG_XHI 0x01
