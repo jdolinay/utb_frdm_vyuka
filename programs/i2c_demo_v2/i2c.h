@@ -2,6 +2,8 @@
  * Podle knihy DEAN, Alexander G.
  * Embedded Systems Fundamentals with ARM Cortex-M based Microcontrollers: A Practical Approach FRDM-KL25Z Edition.
  * ARM Education Media UK, 2017, 316 s. ISBN 978-1911531036.
+ *
+ * Upraveno pro I2C1 misto I2C0 pro praci s teplomerem a vlhkomerem.
  */
 #include <stdint.h>
 

@@ -1,6 +1,6 @@
 /*
  * Ovladac pro I2C komunikaci
- * Vice info viz i2c.c
+ * Vice info viz i2c.h
  */
 #include <MKL25Z4.H>
 #include "i2c.h"
@@ -15,22 +15,21 @@ void i2c_init(void)
 	SIM->SCGC5 |= (SIM_SCGC5_PORTE_MASK);
 	
 	//set pins to I2C function
+	// I2C1 je PE1 a PE0, oba funkce pinu 6.
 	PORTE->PCR[1] |= PORT_PCR_MUX(6);	// SCL pin
 	PORTE->PCR[0] |= PORT_PCR_MUX(6);	// SDA pin
 		
 	//set to 100k baud
-	//baud = bus freq/(scl_div+mul)
+	//baud = bus freq/(scl_div x mul)
  	//~400k = 24M/(64); icr=0x12 sets scl_div to 64
 
  	I2C1->F = (I2C_F_ICR(0x1E) | I2C_F_MULT(0));
-	// jd: pozor vyse ma byt krat a ne plus - spravne dle datasheet:
- 	// baud = bus freq/(scl_div x mul)
- 	// MULT(0) > mul=1, MUL(1) > mul=2
- 	// SCL divider value se najde v tabulce, pro
+	// MULT(0) znamena hodnotu mul=1, MUL(1) = mul=2
+ 	// SCL Divider (scl_div) se najde v tabulce v manualu, pro
  	// ICR=0x10 je SCL divider 48
  	// ICR=0x12 > SCL divider 64
  	// ICR=0x1E > SCL divider 192
- 	// max ICR=0x1f > 240
+ 	// max je ICR=0x1f > SCL divider 240
  	// Vstup pro I2C je "bus clock".
  	// Pro CLOCK_SETUP 0 je bus clock 20.97152 MHz
  	// Pro CLOCK_SETUP 1 je bus clock 24 MHz
@@ -109,6 +108,7 @@ void i2c_start()
 }
 
 //send device and register addresses
+// Pouziva se pro cteni s repeated start pomoci i2c_repeated_read
 #pragma no_inline 
 void i2c_read_setup(uint8_t dev, uint8_t address)
 {
@@ -127,7 +127,6 @@ void i2c_read_setup(uint8_t dev, uint8_t address)
 }
 
 //read a byte and ack/nack as appropriate
-// #pragma no_inline 
 uint8_t i2c_repeated_read(uint8_t isLastRead)
 {
 	uint8_t data;
@@ -155,7 +154,6 @@ uint8_t i2c_repeated_read(uint8_t isLastRead)
 
 //////////funcs for reading and writing a single byte
 //using 7bit addressing reads a byte from dev:address
-// #pragma no_inline 
 uint8_t i2c_read_byte(uint8_t dev, uint8_t address)
 {
 	uint8_t data;
@@ -205,8 +203,9 @@ void i2c_write_byte(uint8_t dev, uint8_t address, uint8_t data)
 	
 }
 
-// jd: write address with no data
-// - for humidity sensor Measurement request command
+// Pridana funkce pro Humidity sensor je treba takova operace.
+// Write address with no data
+// For humidity sensor Measurement request command
 void i2c_write_nobyte(uint8_t dev)
 {
 
@@ -218,23 +217,11 @@ void i2c_write_nobyte(uint8_t dev)
 	I2C_M_STOP;
 }
 
-// jd: write one byte - nepotrebne
-void i2c_write_reg(uint8_t dev, uint8_t address)
-{
-
-	I2C_TRAN;							/*set to transmit mode */
-	I2C_M_START;					/*send start	*/
-	I2C1->D = dev;			  /*send dev address	*/
-	I2C_WAIT						  /*wait for ack */
-
-	I2C1->D =  address;		/*send write address	*/
-	I2C_WAIT
-
-	I2C_M_STOP;
-
-}
-
-// jd: write from humidity sensor
+// Cteni vice byte bez repeated start.
+// Read several bytes without repeated start - for humidity sensor
+// Use repeated read functions but without calling i2c_read_setup
+// because it would send repeated start. Instead just send the
+// device address yourself.
 void i2c_read_bytes(uint8_t dev, uint8_t* buff, uint8_t size)
 {
 	uint8_t data;
@@ -247,47 +234,10 @@ void i2c_read_bytes(uint8_t dev, uint8_t* buff, uint8_t size)
 
 	I2C_REC;						   /*set to recieve mode */
 
-	// verze primo cteni, nefunkcni
-#if 0
-	//data = I2C1->D;					/*dummy read	*/
-	//I2C_WAIT						/*wait for completion */
-	while ( size > 1 ) {
-		lock_detect = 0;
-
-		//buff[index] = I2C1->D;
-		ACK;
-		/*if ( size > 1 )
-			ACK;
-		else {
-			NACK;	// send NACK for last byte
-		}*/
-
-		data = I2C1->D;				/*dummy read	*/
-		I2C_WAIT					/*wait for completion */
-
-		buff[index] = I2C1->D;
-		//I2C_WAIT
-		//data = I2C1->D;					/*dummy read	*/
-		//I2C_WAIT						/*wait for completion */
-		index++;
-		size--;
-	}
-	//index++;
-
-	NACK;
-	data = I2C1->D;				/*dummy read	*/
-	I2C_WAIT					/*wait for completion */
-	I2C_M_STOP;							/*send stop	*/
-	buff[index] = I2C1->D;
-#endif
-
-#if 1
-	// VERZE s repeated_read
 	for( index=0; index<3; index++)	{
 		buff[index] = i2c_repeated_read(0);
 	}
 	// Read last byte ending repeated mode
 	buff[index] = i2c_repeated_read(1);
-#endif
 
 }
