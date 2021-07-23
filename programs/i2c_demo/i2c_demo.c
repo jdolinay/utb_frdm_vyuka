@@ -4,6 +4,8 @@
  * Program ukazuje cteni dat z teplomeru a vlhkometu pres I2C.
  * Namerene hodnoty zobrazuje na LCD displeji.
  *
+ * Toto je verze programu s ovladacem I2C ve stylu ARM CMSIS standardu.
+ * Novejsi verze s jednoduchym ovladacem je v projektu i2c_demo_v2.
  *
  * Postup vytvoreni projektu s ovladacem I2C
  * 1) Pridat do projektu soubor RTE_Devices.h z CMSIS_Driver/Config.
