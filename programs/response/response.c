@@ -19,6 +19,7 @@
 // 2. kontrola tlacitka po bliknuti kazde LED.
 // 3. nepouziva se delay - polling casu.
 // 4. rozdeleni kodu na ulohy - tasky.
+// 5. spagetovy kod - nevhodne reseni!
 #define VERSION 1
 
 // Spolecne definice
@@ -39,7 +40,7 @@ void LED_control(bool d1, bool d2, bool d3);
 
 ///////////////////////////////////////////////////////////////////////////////////////
 // Kod programu v nekolika verzich.
-// Aktivni verze se vybere pomoci #define VERSION nahore.
+// Aktivni verze se vybere pomoci #define VERSION nahore!!!
 #if VERSION == 1
 // Verze 1
 // Odezva je spatna, protoze stav tlacitka se testuje az po bliknuti vsech LED.
