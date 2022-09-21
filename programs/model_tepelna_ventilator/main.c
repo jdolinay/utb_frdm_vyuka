@@ -13,37 +13,55 @@
 static int i = 0;
 char buff[20];
 
+
+void delay(void)
+{
+	uint32_t i;
+	for (i = 0; i < 2000000; i++);
+}
+
+
 int main(void)
 {
+	int temperature, fan_rpm;
+	uint8_t pwm_duty = 0;
+
 	LCD_initialize();
 	LCD_clear();
 	LCD_puts("Start");
 
 	HEATFAN_Init();
 	HEATFAN_CtrlSignalSel(HEATFAN_Heater);
-	HEATFAN_DoPWMPulse(0);
+	HEATFAN_SetPWMDuty(pwm_duty);
 
-    for (;;) {
-    	int teplota = HEATFAN_GetTemperature();
-    	//int teplota = HEATFAN_GetFanRPM();
-    	sprintf(buff, "%d", teplota);
-    	LCD_clear();
+	LCD_clear();
+
+	for (;;) {
+    	temperature = HEATFAN_GetTemperature();		// Pozor, teplota je v desetinach st.C
+    	fan_rpm = HEATFAN_GetFanRPM();
+
+      	sprintf(buff, "Teplota: %4.1f", (float)temperature/10);
+    	LCD_set_cursor(1,1);
     	LCD_puts(buff);
+
+    	sprintf(buff, "Otacky: %5d", fan_rpm);
     	LCD_set_cursor(2,1);
+    	LCD_puts(buff);
 
-    	int duty = 0;
-    	if ( teplota < 40 ) {
-    		duty = 100;
-    		LCD_puts("ON");
+    	LCD_set_cursor(3,1);
+    	if ( temperature < 400 ) {
+    		pwm_duty = 100;
+    		LCD_puts("Topeni ON ");
     	} else {
-    		LCD_puts("OFF");
+    		pwm_duty = 0;
+    		LCD_puts("Topeni OFF");
     	}
 
-    	int n = 1000;
-    	while ( n-- > 0 ) {
-    		HEATFAN_DoPWMPulse(duty);
-    	}
+    	HEATFAN_SetPWMDuty(pwm_duty);
+    	delay();
+    	LCD_clear();
     }
+
     /* Never leave main */
     return 0;
 }

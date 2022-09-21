@@ -13,10 +13,10 @@ typedef enum {
 } HEATFAN_Actuator;
 
 void HEATFAN_Init(void);
-int HEATFAN_GetTemperature(void);
+int16_t HEATFAN_GetTemperature(void);
 uint16_t HEATFAN_GetFanRPM(void);
 void HEATFAN_CtrlSignalSel(HEATFAN_Actuator vyber);
-void HEATFAN_DoPWMPulse(int pwm_percents);
+void HEATFAN_SetPWMDuty(uint8_t pwm_percents);
 
 
 #endif /* SOURCES_HEATFAN_H_ */
