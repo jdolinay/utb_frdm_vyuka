@@ -43,6 +43,15 @@ Vytvoreni noveho projektu v KDS 3.0.0
 do KDS na slozku Sources. Z nabizenych moznosti zvolit "Link" (tj. odkazy na soubory, ne zkopirovani).
 Alternativne: New Folder > typ slozky vybrat "linked folder".
 
+Ziskani archivu pro vyuku (vymazání nepotřebných složek jako je dokumentace)
+Z git archive revision
+rozbalit do tmp slozky
+Smazat slozku testing
+Smazat z doc/datasheets
+Vyhledat gitignore a smazat
+Vytvorit slozku utb_frdm_vyuka a do ni presunout
+Celou slozku zazipovat jako utb_frdm_vyuka_20220920.
+
 
 Reseni 2 jazykovych verzi v GIT
 Branch master je cesky.
