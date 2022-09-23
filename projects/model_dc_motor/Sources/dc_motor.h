@@ -8,8 +8,7 @@
 
 void DCMOTOR_setDirection(char dir);
 void DCMOTOR_Init();
-void DCMOTOR_SpinON();
-void DCMOTOR_SpinOFF();
+void DCMOTOR_setRpm(uint8_t n);
 int DCMOTOR_GetRpm();
 
 
